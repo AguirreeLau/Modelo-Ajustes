@@ -37,12 +37,25 @@ Repositorio con funciones básicas para ajustes de datos con incertidumbres asoc
 
 ![Ajuste cúbico](Imagenes/Ajuste_cubico.png)
 
-## Instalación
+## Instalación y actualizaciones
+
+### 1. Instalación clonando el repositorio (modo editable)
 
 ```bash
-git clone https://github.com/tu_usuario/Modelo_Ajustes.git
+git clone https://github.com/tu_usuario/Modelo-Ajustes.git
 cd Modelo_Ajustes
 pip install -r requirements.txt
+```
+
+### 2. Instalación común (desde GitHub)
+
+#### Para instalar, usar:
+```bash
+pip install git+https://github.com/AguirreeLau/Modelo_Ajustes.git
+```
+#### Para actualizar, usar:
+```bash
+pip install --upgrade git+https://github.com/AguirreeLau/Modelo_Ajustes.git
 ```
 
 ## Estado actual

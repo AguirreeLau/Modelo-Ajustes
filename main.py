@@ -1,6 +1,5 @@
 """
 Demostración de flujo completo del proyecto de ajuste cúbico con incertidumbres.
-
 Este script realiza las siguientes operaciones:
 
 ### 1. Generación de datos sintéticos

@@ -1,16 +1,38 @@
 """
-Paquete principal fittools de Modelo-Ajustes
+fittools — Herramientas para ajuste de modelos y análisis de datos
 
-Contiene módulos y clases reutilizables para manejo de datos, gráficos, ajustes
-y funciones auxiliares.
+Este módulo proporciona una interfaz unificada para acceder a los submódulos de `fittools`,
+facilitando su importación y uso en proyectos de análisis y modelado.
 
-## Clases principales expuestas
-    - dframes: DataFrame con manejo extendido de datos.
-    - grafs: Graficos para creación y renderizado de figuras.
-    - fres: FitResult para manejo de resultados de ajuste.
-    - funcs: Funciones auxiliares y lógica de los ajustes.
+---
 
-Módulos internos como _decoradores no se exponen.
+Puedes importar los módulos de `fittools` de las siguientes maneras:
+
+### 1. Importación completa del paquete
+```python
+import fittools
+```
+
+### 2. Importación de submódulos específicos
+```python
+import fittools.data_frames
+import fittools.funciones
+import fittools.graficos
+import fittools.fit_result
+```
+
+### 3. Importación de submódulos específicos
+```python
+from fittools.data_frames import DataFrame
+from fittools.funciones import Funciones
+from fittools.graficos import Graficos
+from fittools.fit_result import FitResult
+```
+
+### 4. Importación completa del paquete
+```python
+from fittools import *   # DataFrame as dframes, Funciones as funcs, FitResult as fres, Graficos as grafs
+```
 """
 from . import funciones, graficos, data_frames, fit_result
 from .data_frames import DataFrame as dframes
