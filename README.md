@@ -43,7 +43,7 @@ Repositorio con funciones básicas para ajustes de datos con incertidumbres asoc
 
 ```bash
 git clone https://github.com/tu_usuario/Modelo-Ajustes.git
-cd Modelo_Ajustes
+cd Modelo-Ajustes
 pip install -r requirements.txt
 ```
 
@@ -51,11 +51,11 @@ pip install -r requirements.txt
 
 #### Para instalar, usar:
 ```bash
-pip install git+https://github.com/AguirreeLau/Modelo_Ajustes.git
+pip install git+https://github.com/AguirreeLau/Modelo-Ajustes.git
 ```
 #### Para actualizar, usar:
 ```bash
-pip install --upgrade git+https://github.com/AguirreeLau/Modelo_Ajustes.git
+pip install --upgrade git+https://github.com/AguirreeLau/Modelo-Ajustes.git
 ```
 
 ## Estado actual
