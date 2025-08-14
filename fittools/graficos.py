@@ -19,8 +19,8 @@ from matplotlib import style
 import scienceplots
 from pathlib import Path
 import numpy as np
-from .Data import DataFrame as DF        # para usar _norm_str
-from .Decoradores import excepciones
+from .data_frames import DataFrame as DF        # para usar _norm_str
+from ._decoradores import excepciones
 from dataclasses import dataclass, field
 
 @dataclass

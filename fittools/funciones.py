@@ -1,6 +1,6 @@
 from typing import Callable, Optional, Tuple, List
 from scipy.odr import ODR, Model, RealData
-from .Decoradores import excepciones
+from ._decoradores import excepciones
 from dataclasses import dataclass
 from uncertainties import ufloat
 import numpy as np
@@ -106,7 +106,7 @@ class Funciones:                                                    # Clase de l
             residuos = data_y - self.funcion(resultado.beta, data_x)
             R2, R2_aj = self._coef_determinacion(data_y, residuos, cant_params)
 
-        from .FitResult import FitResult
+        from .fit_result import FitResult
         return FitResult(ODR_output=resultado, parametros=p_opt, R2=R2, R2_aj=R2_aj, residuos=residuos)
 
 ### Funciones comunes

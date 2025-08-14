@@ -1,10 +1,10 @@
 import pytest
 from pathlib import Path
-from Base import G
+from fittools import grafs
 
 def test_instancia_graficos():
     """Verifica que se pueda crear una instancia y combinar colores/fontsizes."""
-    g = G(columnas=2, colores={"titulo": "#FF0000"}, fontsizes={"titulo": 20})
+    g = grafs(columnas=2, colores={"titulo": "#FF0000"}, fontsizes={"titulo": 20})
 
     # Comprobar que los valores por defecto se mantienen para keys no pasadas
     assert g.colores["titulo"] == "#FF0000"
@@ -15,7 +15,7 @@ def test_instancia_graficos():
 def test_crear_figura_y_axes():
     """Verifica que crear() devuelva figuras y axes correctamente."""
     titulos = ["T1", "T2"]
-    g = G(columnas=2)
+    g = grafs(columnas=2)
     fig, axes = g.crear(titulo=titulos, eje_x="x", eje_y="y")
 
     # Debe devolver objeto Figure
@@ -32,7 +32,7 @@ def test_render_limites_y_guardado(tmp_path):
     import numpy as np
 
     # Crear instancia del gráfico
-    g = G(columnas=1)
+    g = grafs(columnas=1)
     fig, ax = g.crear(titulo="Prueba", eje_x="X", eje_y="Y")
     
     # Datos de prueba

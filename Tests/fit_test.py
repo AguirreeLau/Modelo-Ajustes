@@ -2,8 +2,8 @@ import pytest
 import numpy as np
 from uncertainties.core import UFloat
 from uncertainties import ufloat
-from Base.FitResult import FitResult
-from Base.Funciones import Funciones
+from fittools.fit_result import FitResult
+from fittools.funciones import Funciones
 
 # --- Fixtures de datos ---
 

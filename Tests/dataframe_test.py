@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import numpy as np
-from Base import DF
+from fittools import dframes
 from uncertainties import unumpy as unp
 from pathlib import Path
 
@@ -22,7 +22,7 @@ def csv_path(tmp_path):
 @pytest.fixture
 def df_instance(csv_path):
     """Instancia de DataFrame desde CSV de prueba."""
-    return DF.desde_csv(csv_path, separacion=",", encabezados=True)
+    return dframes.desde_csv(csv_path, separacion=",", encabezados=True)
 
 # --- Tests ---
 
@@ -59,7 +59,7 @@ def test_separar_c_f(df_instance):
 def test_norm_str():
     """Prueba de normalización de strings."""
     s = "Temperatura (°C)"
-    norm = DF._norm_str(s)
+    norm = dframes._norm_str(s)
     assert norm == "temperatura_c"
 
 def test_uarray_sufijo(df_instance):

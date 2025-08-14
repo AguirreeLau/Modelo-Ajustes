@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
-from Base.FitResult import FitResult
-from Base.Funciones import Funciones
+from fittools.fit_result import FitResult
+from fittools.funciones import Funciones
 from uncertainties.core import UFloat
 from uncertainties import ufloat
 from types import SimpleNamespace

@@ -21,7 +21,7 @@ y utilidades para análisis estadístico como el método jackknife para estimar 
     >>> print(resultado)
     >>> parametros_jk, fits_jk = resultado.jackknife(modelo, x_data, y_data)
 """
-from .Decoradores import excepciones
+from ._decoradores import excepciones
 from dataclasses import dataclass
 from typing import Callable, List, Optional
 from uncertainties import ufloat

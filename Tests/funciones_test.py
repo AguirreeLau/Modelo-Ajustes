@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from Base.Funciones import Funciones 
+from fittools.funciones import Funciones 
 from uncertainties import ufloat
 
 # --- Fixtures ---

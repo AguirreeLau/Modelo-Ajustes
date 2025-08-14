@@ -18,7 +18,7 @@ como manejo de incertidumbres y filtrado flexible.
     - re (expresiones regulares)
     - os
 """
-from .Decoradores import excepciones
+from ._decoradores import excepciones
 from typing import Union, Optional, Tuple, Dict
 from dataclasses import dataclass
 from uncertainties import unumpy as unp
