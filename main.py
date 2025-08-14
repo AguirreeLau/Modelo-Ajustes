@@ -83,20 +83,17 @@ print(resultado)
 # ================================
 # 5. Graficar datos y ajuste
 # ================================
-graf = G(columnas=2)
-fig, axes = graf.crear(titulo=["Ajuste cúbico", "Residuos"], eje_x=[None, "x"], eje_y=["y", None])
+graf = G(columnas=1)
+fig, ax = graf.crear(titulo=["Ajuste cúbico", "Residuos"], eje_x=[None, "x"], eje_y=["y", None])
 
 # Graficar datos con incertezas
-axes[0].errorbar(
+ax.errorbar(
     nv(X), nv(Y), xerr=sd(X), yerr=sd(Y),
     fmt="X", c="#AC1C16", ecolor="#ACACAC",
     label="Datos"
 )
 # Graficar ajuste cúbico
 y_fit = F.polinomio(nv(resultado.parametros), nv(X))
-axes[0].plot(nv(X), y_fit, label="Ajuste cúbico")
-
-axes[1].scatter(nv(X), resultado.residuos, c="#1F77B4", marker="X")
-axes[1].axhline(0, color="k", linestyle="--")
+ax.plot(nv(X), y_fit, label="Ajuste cúbico")
 
 graf.render(ruta_guardado="Ajuste cúbico.png", mostrar=False)
