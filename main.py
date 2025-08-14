@@ -84,7 +84,7 @@ print(resultado)
 # 5. Graficar datos y ajuste
 # ================================
 graf = G(columnas=1)
-fig, ax = graf.crear(titulo=["Ajuste cúbico", "Residuos"], eje_x=[None, "x"], eje_y=["y", None])
+fig, ax = graf.crear(titulo="Ajuste cúbico", eje_x="x", eje_y="y")
 
 # Graficar datos con incertezas
 ax.errorbar(
