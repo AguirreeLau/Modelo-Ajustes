@@ -8,7 +8,7 @@ setup(
     description="Funciones para ajustes de datos con incertidumbres y visualización de resultados.",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/AguirreeLau/Modelo_Ajustes",
+    url="https://github.com/AguirreeLau/Modelo-Ajustes",
     packages=find_packages(),  # detecta automáticamente Base y otros paquetes con __init__.py
     install_requires=[
         "numpy",
