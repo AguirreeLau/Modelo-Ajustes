@@ -60,4 +60,4 @@ pip install --upgrade git+https://github.com/AguirreeLau/Modelo-Ajustes.git
 
 ## Estado actual
 
-Actualmente el proyecto está en estado preliminar, pueden implementarse muchas mejoras en las herramientas de la carpeta Base, sin embargo, todas pueden utilizarse y aligeran bastantante el manejo de datos.
+Actualmente el proyecto está en estado preliminar, pueden implementarse muchas mejoras en las herramientas de la carpeta fittools, sin embargo, todas pueden utilizarse y aligeran bastantante el manejo de datos.
