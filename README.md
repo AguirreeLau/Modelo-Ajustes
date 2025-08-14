@@ -1,6 +1,6 @@
 # Modelo_Ajustes
 
-Repositorio de ejemplo para ajustes de funciones con incertidumbre y visualización de resultados.
+Repositorio con funciones básicas para ajustes de datos con incertidumbres asociadas y visualización de resultados.
 
 ## Estructura
 
