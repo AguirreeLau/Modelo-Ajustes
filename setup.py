@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="Modelo_Ajustes",
+    name="fittools",
     version="0.1.0",
     author="Lautaro Aguirre",
     author_email="aguirreelautaro@gmail.com",
