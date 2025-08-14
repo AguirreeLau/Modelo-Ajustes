@@ -23,3 +23,8 @@ Repositorio con funciones básicas para ajustes de datos con incertidumbres asoc
 git clone https://github.com/tu_usuario/Modelo_Ajustes.git
 cd Modelo_Ajustes
 pip install -r requirements.txt
+```
+
+## Estado actual
+
+Actualmente el proyecto está en estado preliminar, pueden implementarse muchas mejoras en las herramientas de la carpeta Base, sin embargo, todas pueden utilizarse y aligeran bastantante el manejo de datos.
