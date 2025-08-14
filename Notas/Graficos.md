@@ -1,6 +1,6 @@
 # Módulo `graficos` - Estandarización de gráficos por Matplotlib
 
-El módulo `Graficos` proporciona una clase para crear, configurar, mostrar y guardar gráficos de manera flexible utilizando Matplotlib, con soporte para múltiples subplots, estilos científicos, colores y tamaños de fuente personalizables.
+El módulo `graficos` proporciona una clase para crear, configurar, mostrar y guardar gráficos de manera flexible utilizando Matplotlib, con soporte para múltiples subplots, estilos científicos, colores y tamaños de fuente personalizables.
 
 ---
 

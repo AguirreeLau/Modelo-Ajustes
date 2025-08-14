@@ -1,4 +1,4 @@
-# Modelo_Ajustes
+# Modelo-Ajustes
 
 Repositorio con funciones básicas para ajustes de datos con incertidumbres asociadas y visualización de resultados.
 
