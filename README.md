@@ -17,6 +17,26 @@ Repositorio con funciones básicas para ajustes de datos con incertidumbres asoc
 - `Notas/` : Documentación de cada módulo en markdown.
 - `main.py` : Demo completa del proyecto.
 
+## Ejemplo de salida
+
+```
+################################
+####  Resultado del ajuste  ####
+################################
+* Parámetros:
+      - p1 = 0.4323 ± 0.96
+      - p2 = 3.412 ± 0.55
+      - p3 = -1.092 ± 0.085
+      - p4 = 0.4551 ± 0.033
+* R² = 0.9831
+* R² ajustado = 0.9816
+* Motivo(s) de finalización:
+      - Sum of squares convergence
+################################
+```
+
+![Ajuste cúbico](Imagenes/Ajuste_cubico.png)
+
 ## Instalación
 
 ```bash

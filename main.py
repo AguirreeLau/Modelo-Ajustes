@@ -96,4 +96,4 @@ ax.errorbar(
 y_fit = F.polinomio(nv(resultado.parametros), nv(X))
 ax.plot(nv(X), y_fit, label="Ajuste cúbico")
 
-graf.render(ruta_guardado="Ajuste cúbico.png", mostrar=False)
+graf.render(ruta_guardado="Ajuste_cubico.png", mostrar=False)
