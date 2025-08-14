@@ -4,12 +4,12 @@ Repositorio con funciones básicas para ajustes de datos con incertidumbres asoc
 
 ## Estructura
 
-- `Base/` : Módulos principales
-    - `Data.py` : Manejo de DataFrames y conversión a arrays con incertidumbres.
-    - `Funciones.py` : Funciones matemáticas y ajuste ODR.
-    - `FitResult.py` : Clase para almacenar resultados de ajuste.
-    - `Graficos.py` : Clase para generar figuras y subplots.
-    - `Decoradores.py` : Decoradores para manejo de excepciones.
+- `fittools/` : Módulos principales
+    - `data_frames.py` : Manejo de DataFrames y conversión a arrays con incertidumbres.
+    - `funciones.py` : Funciones matemáticas y ajuste ODR.
+    - `fit_result.py` : Clase para almacenar resultados de ajuste.
+    - `graficos.py` : Clase para generar figuras y subplots.
+    - `_decoradores.py` : Decoradores para manejo de excepciones.
 
 - `Datos/` : Datos de ejemplo (`demo_cubica.csv`).
 - `Imagenes/` : Gráficos generados (`Ajuste cúbico.png`).

@@ -1,4 +1,4 @@
-# Módulo `FitResult` - Contenedor de resultados de ajuste y estadistica posterior
+# Módulo `fit_result` - Contenedor de resultados de ajuste y estadistica posterior
 
 ## Descripción general
 
@@ -7,7 +7,7 @@ de un ajuste estadístico realizado mediante **Orthogonal Distance Regression (O
 
 La clase encapsula los parámetros ajustados con sus incertidumbres, coeficientes de determinación (R² y R² ajustado), residuos, y ofrece métodos auxiliares para análisis de incertidumbres, como el método Jackknife.
 
-La creación de instancias se realiza mediante la función de clase `Funciones.fit_odr()` del módulo `Funciones.py` (ver [Funciones.md](Funciones.md)).
+La creación de instancias se realiza mediante la función de clase `funciones.fit_odr()` del módulo `Funciones.py` (ver [funciones.md](Funciones.md)).
 
 ---
 
@@ -54,7 +54,7 @@ Calcula la incertidumbre de los parámetros usando el método estadístico **Jac
 ## Ejemplo de uso
 
 ```python
-from Clases import FR  # from Clases.FitResult import FitResult as FR
+from fittools import FR  # from fittools.fit_result import FitResult as fres
 
 # Supongamos que `modelo` es una instancia de Funciones que cuenta con el método fit_odr implementado
 resultado = modelo.fit_odr(x_data, y_data, p0=[1.0, 0.5])

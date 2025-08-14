@@ -1,4 +1,4 @@
-# Módulo `Graficos` - Estandarización de gráficos por Matplotlib
+# Módulo `graficos` - Estandarización de gráficos por Matplotlib
 
 El módulo `Graficos` proporciona una clase para crear, configurar, mostrar y guardar gráficos de manera flexible utilizando Matplotlib, con soporte para múltiples subplots, estilos científicos, colores y tamaños de fuente personalizables.
 
@@ -10,8 +10,8 @@ El módulo `Graficos` proporciona una clase para crear, configurar, mostrar y gu
 - `scienceplots` para estilos científicos adicionales.
 - `numpy` para manejo de arrays.
 - `pathlib` para manejo de rutas de archivos.
-- `Data` para la función `_norm_str` (normalización de strings).
-- `Decoradores` para el decorador `excepciones`.
+- `data_frames` para la función `_norm_str` (normalización de strings).
+- `_decoradores` para el decorador `excepciones`.
 
 ---
 
@@ -98,10 +98,10 @@ Configura los ejes, muestra y guarda la figura.
 
 ## Ejemplo de uso
 ```python
-from Clases import G  # from Clases.Graficos import Graficos as G
+from fittools import grafs  # from fittools.Graficos import Graficos as grafs
 import numpy as np
 
-g = Graficos(columnas=2)    # Crear instancia
+g = grafs(columnas=2)    # Crear instancia
 
 # Crear figura y ejes
 fig, ax = g.crear(titulo=["Temperatura","Presión"], eje_x="Tiempo", eje_y=["Temp (°C)","Pres (Pa)"])

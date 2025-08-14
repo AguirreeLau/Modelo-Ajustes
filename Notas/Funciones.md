@@ -1,4 +1,4 @@
-# Módulo `Funciones` para ajuste usando scipy.odr
+# Módulo `funciones` para ajuste usando scipy.odr
 
 Este módulo define una clase `Funciones` que encapsula funciones para ajustar datos experimentales usando Orthogonal Distance Regression (ODR) con `scipy.odr`. Además incluye métodos para evaluar coeficientes de ajuste y funciones modelo comunes.
 
@@ -13,7 +13,7 @@ Este módulo utiliza las siguientes librerías externas:
 - `uncertainties`: para representar parámetros ajustados con su incertidumbre (valor $\pm$ error).
 - `dataclasses`: para definición simplificada de clases con atributos.
 - `typing`: para anotaciones de tipos, mejorando la legibilidad y mantenimiento del código.
-- `Decoradores`: módulo local que provee el decorador `excepciones` para manejo controlado de errores.
+- `_decoradores`: módulo local que provee el decorador `excepciones` para manejo controlado de errores.
 
 ## Contenidos del módulo
 
@@ -184,11 +184,11 @@ Modelo **Pseudo-Voigt asimétrico** para ajuste de picos:
 ## Ejemplo de uso básico
 
 ```python
-from Clases import F  # from Clases.Funciones import Funciones as F 
+from fittools import funcs  # from fittools.funciones import Funciones as funcs 
 import numpy as np
 
 # Crear instancia tomando la función polinómica (de grado 1) de la clase
-func = Funciones(funcion=F.polinomio)
+func = funcs(funcion=funcs.polinomio)
 
 # Datos simulados
 x_data = np.array([1,2,3,4,5])

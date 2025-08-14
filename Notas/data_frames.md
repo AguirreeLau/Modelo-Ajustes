@@ -1,4 +1,4 @@
-# Módulo `Data` — Manejo avanzado de datos tabulares
+# Módulo `data_frames` — Manejo avanzado de datos tabulares
 
 Este módulo provee la clase `DataFrame`, diseñada para cargar, filtrar y manipular datos tabulares con funcionalidades extendidas que complementan a `pandas.DataFrame`, incluyendo manejo de incertidumbres y filtrado flexible.
 
@@ -11,7 +11,7 @@ Este módulo provee la clase `DataFrame`, diseñada para cargar, filtrar y manip
 - `uncertainties` (`unumpy`): creación y manipulación de arrays con incertidumbres.
 - `re`: expresiones regulares para procesamiento de strings.
 - `os`: operaciones del sistema de archivos.
-- `Decoradores`: Decoradores personalizados para manejo de excepciones (`excepciones`).
+- `_decoradores`: Decoradores personalizados para manejo de excepciones (`excepciones`).
 
 ---
 
@@ -116,10 +116,10 @@ Genera una grilla 2D para visualización y calcula gradientes si se solicita.
 ## Uso típico
 
 ```python
-from Clases import DF  # from Clases.Data import DataFrame as DF
+from fittools import dframes  # from fittools.data_frames import DataFrame as dframes
 
 # Cargar datos desde CSV
-df = DataFrame.desde_csv("datos.csv", separacion=",", encabezados=True)
+df = dframes.desde_csv("datos.csv", separacion=",", encabezados=True)
 
 # Filtrar filas donde 'temperatura' > 20 y 'presion' < 1.5
 df_filtrado = df.filtrar("temperatura > 20 and presion < 1.5")
