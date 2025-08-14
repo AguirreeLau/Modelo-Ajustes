@@ -1,12 +1,11 @@
-# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Entornos virtuales
 .env/
 venv/
-
-# Archivos de testing/pytest
 .pytest_cache/
+.vscode/
+.idea/
+__pycache__/
+*.py[cod]
