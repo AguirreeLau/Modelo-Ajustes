@@ -5,11 +5,11 @@ Repositorio con funciones básicas para ajustes de datos con incertidumbres asoc
 ## Estructura
 
 - `fittools/` : Módulos principales
-    - `data_frames.py` : Manejo de DataFrames y conversión a arrays con incertidumbres.
-    - `funciones.py` : Funciones matemáticas y ajuste ODR.
-    - `fit_result.py` : Clase para almacenar resultados de ajuste.
-    - `graficos.py` : Clase para generar figuras y subplots.
-    - `_decoradores.py` : Decoradores para manejo de excepciones.
+  - `data_frames.py` : Manejo de DataFrames y conversión a arrays con incertidumbres.
+  - `funciones.py` : Funciones matemáticas y ajuste ODR.
+  - `fit_result.py` : Clase para almacenar resultados de ajuste.
+  - `graficos.py` : Clase para generar figuras y subplots.
+  - `_decoradores.py` : Decoradores para manejo de excepciones.
 
 - `Datos/` : Datos de ejemplo (`demo_cubica.csv`).
 - `Imagenes/` : Gráficos generados (`Ajuste cúbico.png`).
@@ -19,7 +19,7 @@ Repositorio con funciones básicas para ajustes de datos con incertidumbres asoc
 
 ## Ejemplo de salida
 
-```
+``` text
 ################################
 ####  Resultado del ajuste  ####
 ################################
@@ -49,11 +49,14 @@ pip install -r requirements.txt
 
 ### 2. Instalación común (desde GitHub)
 
-#### Para instalar, usar:
+#### Para instalar, usar
+
 ```bash
 pip install git+https://github.com/AguirreeLau/Modelo-Ajustes.git
 ```
-#### Para actualizar, usar:
+
+#### Para actualizar, usar
+
 ```bash
 pip install --upgrade git+https://github.com/AguirreeLau/Modelo-Ajustes.git
 ```
