@@ -8,19 +8,19 @@ Este script realiza las siguientes operaciones:
   - Los datos se guardan en un CSV en la carpeta `datos/`.
 
 ### 2. Carga y transformación de datos
-  - Se utiliza la clase `DF` para leer el CSV.
+  - Se utiliza la clase `DataFrame` para leer el CSV.
   - Se convierte cada columna nominal y su columna de error asociada
     en arrays de números con incertidumbre usando `uarray` de `uncertainties`.
 
 ### 3. Ajuste de los datos con ODR
-  - Se define la función cúbica con `F.polinomio`.
+  - Se define la función cúbica con `funcs.polinomio`.
   - Se realiza el ajuste usando `fit_odr` considerando incertidumbres
     en x e y.
   - El resultado es un objeto `FitResult` que contiene parámetros ajustados,
     incertidumbres, R² y residuos.
 
 ### 4. Visualización
-  - Se crea un gráfico con `G`.
+  - Se crea un gráfico con `Graficos`.
   - Se plotean los datos con barras de error.
   - Se plotea la curva ajustada.
   - Se guarda la figura resultante como `"Ajuste cúbico.png"`.
