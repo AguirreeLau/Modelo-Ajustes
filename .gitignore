@@ -1,11 +1,26 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.env/
-venv/
-.pytest_cache/
-.vscode/
-.idea/
+# Bytecode
 __pycache__/
 *.py[cod]
+
+# Entornos
+.env/
+venv/
+.venv/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build / packaging
+*.egg-info/
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
