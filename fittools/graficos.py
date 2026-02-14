@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from matplotlib import style
 import scienceplots
 from pathlib import Path
+import sys
 import numpy as np
 from .data_frames import DataFrame as DF        # para usar _norm_str
 from ._decoradores import excepciones
@@ -246,7 +247,16 @@ class Graficos:
             self.fig.tight_layout()
         # Guardado
         if ruta_guardado is not None:
-            archivo = Path("Imagenes") / ruta_guardado
+            ruta_guardado = Path(ruta_guardado)
+
+            if ruta_guardado.is_absolute():
+                archivo = ruta_guardado
+            else:
+                modulo_principal = sys.modules.get("__main__")
+                archivo_principal = getattr(modulo_principal, "__file__", None)
+                carpeta_base = Path(archivo_principal).resolve().parent if archivo_principal else Path.cwd()
+                archivo = carpeta_base / "Imagenes" / ruta_guardado
+
             archivo.parent.mkdir(parents=True, exist_ok=True)   # crea carpeta si hace falta
             self.fig.savefig(archivo, bbox_inches='tight')
             print("Gráfico guardado en:", archivo)
