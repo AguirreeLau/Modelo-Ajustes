@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fittools"
+version = "0.1.0"
+description = "Funciones para ajustes de datos con incertidumbres y visualización de resultados."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [
+    { name = "Lautaro Aguirre", email = "aguirreelautaro@gmail.com" }
+]
+dependencies = [
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "scipy",
+    "uncertainties"
+]
+
+[project.urls]
+Homepage = "https://github.com/AguirreeLau/Modelo-Ajustes"
+
+[tool.setuptools.packages.find]
+where = ["."]
