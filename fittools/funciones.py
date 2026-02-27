@@ -71,7 +71,7 @@ class Funciones:                                                    # Clase de l
             raise ValueError(f"Los arrays deben tener la misma longitud. Se obtuvo {len(a)} y {len(b)} respectivamente.")
     
     @excepciones(critico=True, imprimir=True)
-    def _peso(err: np.ndarray, err_min: Optional[float] = None) -> np.ndarray:
+    def _peso(self, err: np.ndarray, err_min: Optional[float] = None) -> np.ndarray:
             if err_min is not None:
                 err_eff = np.maximum(err, err_min)
             else:
