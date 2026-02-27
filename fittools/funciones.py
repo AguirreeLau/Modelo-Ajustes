@@ -49,13 +49,12 @@ class Funciones:                                                    # Clase de l
         sol = odr_fit(self.funcion, xdata, ydata, beta0, weight_x=wx, weight_y=wy, **kwargs)
         beta_opt = [ufloat(val, err) for val, err in zip(sol.beta, sol.sd_beta)]
 
-        estimadores_resultados = self._calcular_estimadores(estimadores, sol, xdata, ydata)
+        estimadores_res = self._calcular_estimadores(estimadores, sol, xdata, ydata)
 
         from .fit_result import FitResult
-        return sol, beta_opt, estimadores_resultados        # FALTA CAMBIAR EL RETURN PARA QUE DEVUELVA UN OBJETO DE LA CLASE FitResult CON TODOS LOS ESTIMADORES EN UN DICT COMÚN.
-        # return FitResult(ODR_output=sol, parametros=beta_opt, estimadores=estimadores_resultados)
+        return FitResult(odrresult=sol, parametros=beta_opt, estimadores=estimadores_res)
 
-
+    @excepciones(critico=True, imprimir=True)
     def _check_array(self, a: np.ndarray, b: np.ndarray) -> None:
         """
         Verifica que dos arrays tengan la misma longitud.
@@ -69,7 +68,7 @@ class Funciones:                                                    # Clase de l
         """
         if len(a) != len(b):
             raise ValueError(f"Los arrays deben tener la misma longitud. Se obtuvo {len(a)} y {len(b)} respectivamente.")
-    
+
     @excepciones(critico=True, imprimir=True)
     def _peso(self, err: np.ndarray, err_min: Optional[float] = None) -> np.ndarray:
             if err_min is not None:
@@ -78,6 +77,7 @@ class Funciones:                                                    # Clase de l
                 err_eff = err
             return  1.0 / err_eff**2
 
+    @excepciones(critico=True, imprimir=True)
     def _calcular_estimadores(self, estimadores, sol, xdata, ydata):
         """
         Llama a las funciones individuales de cada estimador solicitado
@@ -107,26 +107,31 @@ class Funciones:                                                    # Clase de l
             resultados[nombre] = disponibles[nombre](sol, xdata, ydata)
         return resultados
 
+    @excepciones(critico=True, imprimir=True)
     def _calc_residuos(self, sol, xdata, ydata):
         return ydata - self.funcion(xdata, sol.beta)
 
+    @excepciones(critico=True, imprimir=True)
     def _calc_r2(self, sol, xdata, ydata):
         residuos = self._calc_residuos(sol, xdata, ydata)
         SCT = np.sum((ydata - np.mean(ydata))**2)
         SCR = np.sum(residuos**2)
         return 1 - (SCR / SCT)
 
+    @excepciones(critico=True, imprimir=True)
     def _calc_r2_ajustado(self, sol, xdata, ydata):
         R2 = self._calc_r2(sol, xdata, ydata)
         n = len(ydata)
         p = len(sol.beta)
         return 1 - (1 - R2)*(n - 1)/(n - p - 1)
 
+    @excepciones(critico=True, imprimir=True)
     def _calc_chi2_reducido(self, sol, xdata=None, ydata=None):
         chi2 = sol.sum_square
         dof = len(sol.eps) - len(sol.beta)
         return chi2 / dof if dof > 0 else np.inf
 
+    @excepciones(critico=True, imprimir=True)
     def _calc_matriz_correlacion(self, sol, xdata=None, ydata=None):
         sd = sol.sd_beta
         cov = sol.cov_beta

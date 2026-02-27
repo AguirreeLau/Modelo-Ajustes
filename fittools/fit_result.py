@@ -40,12 +40,9 @@ class FitResult:
         - R2_aj Optional[float]: por defecto None Coeficiente de determinación ajustado para el número de parámetros y muestras.
         - residuos Optional[np.ndarray]: por defecto None Residuos del ajuste calculados como (y_observado - y_ajustado).
     """
-    ODR_output: Output                           # Objeto de salida del ajuste ODR
+    odrresult: Output                               # Objeto de salida del ajuste ODR
     parametros: List[ufloat]                        # Parámetros ajustados con incertidumbre
-    R2: Optional[float] = None                      # Coeficiente de determinación
-    R2_aj: Optional[float] = None                   # R2 ajustado
-    residuos: Optional[np.ndarray] = None           # Residuos del ajuste (y_exp - f(*p_opt, x_exp))
-    ## FALTA CAMBIAR LOS ATRIBUTOS DE LA CLASE,TODOS LOS ESTIMADORES PASA A UN DICT QUE COMÚN.
+    estimadores: dict = None                        # Diccionario de estimadores calculados (R², R² ajustado, residuos, etc.)
 
     def __str__(self) -> str:
         """
@@ -61,8 +58,9 @@ class FitResult:
             f"      - p{i+1} = {p.nominal_value:.4g} ± {p.std_dev:.2g}"
             for i, p in enumerate(self.parametros)
         )
-        r2_str = f"R² = {self.R2:.4f}" if self.R2 is not None else "R² = N/A"
-        r2aj_str = f"R² ajustado = {self.R2_aj:.4f}" if self.R2_aj is not None else "R² ajustado = N/A"
+        r2aj_str = f"R² ajustado = {self.estimadores["R2 ajustado"]:.4f}" if self.estimadores and self.estimadores.get("R2 ajustado") is not None else "R² ajustado = N/A"
+        chi2_red_str = f"χ² reducido = {self.estimadores["Chi2 reducido"]:.4f}" if self.estimadores and self.estimadores.get("Chi2 reducido") is not None else "χ² reducido = N/A"
+
         stopreason_raw = getattr(self.ODR_output, "stopreason", None) if self.ODR_output else None
         if isinstance(stopreason_raw, (list, tuple)):
             stop_lines = "\n".join(f"      - {r}" for r in stopreason_raw)
@@ -72,8 +70,8 @@ class FitResult:
             stop_lines = "      - N/A"
         content = (
             f"* Parámetros:\n{params_lines}\n"
-            f"* {r2_str}\n"
             f"* {r2aj_str}\n"
+            f"* {chi2_red_str}\n"
             f"* Motivo(s) de finalización:\n{stop_lines}"
         )
         border = "#" * 32
@@ -92,10 +90,12 @@ class FitResult:
             - scipy.odr.Output: Objeto de salida completo del ajuste ODR.
         """
         yield self.parametros
-        yield self.R2
-        yield self.R2_aj
-        yield self.residuos
-        yield self.ODR_output
+        yield self.estimadores.get("R2")
+        yield self.estimadores.get("R2 ajustado") 
+        yield self.estimadores.get("Residuos")
+        yield self.estimadores.get("Chi2 reducido")
+        yield self.estimadores.get("Matriz de correlación")
+        yield self.odrresult
 
     @excepciones(critico=True, imprimir=True)
     def jackknife(self, f, data_x: np.ndarray, data_y: np.ndarray, p0: list[float]=None, err_x: Optional[np.ndarray]=None, err_y: Optional[np.ndarray]=None, estimadores: Optional[bool]=True, sstol: Optional[float]=None, partol: Optional[float]=None, maxit: Optional[int]=None, iprint: Optional[int]=None, excluir: Optional[List[int]] = None, incluir: Optional[List[int]] = None) -> List[ufloat]:
