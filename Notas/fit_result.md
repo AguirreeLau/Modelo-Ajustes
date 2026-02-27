@@ -1,21 +1,26 @@
-# Módulo `fit_result` - Contenedor de resultados de ajuste y estadistica posterior
+# Modulo `fit_result` - Contenedor de resultados de ajuste y analisis posterior
 
-## Descripción general
+## Descripcion general
 
-Este módulo proporciona la clase `FitResult`, diseñada para almacenar y manejar los resultados
-de un ajuste estadístico realizado mediante **Orthogonal Distance Regression (ODR)**, utilizando la biblioteca `scipy.odr`.
+Este modulo proporciona la clase `FitResult`, creada para almacenar y manejar resultados de ajustes ODR realizados desde `Funciones.fit_odr`.
 
-La clase encapsula los parámetros ajustados con sus incertidumbres, coeficientes de determinación (R² y R² ajustado), residuos, y ofrece métodos auxiliares para análisis de incertidumbres, como el método Jackknife.
+En la version actual el ajuste se basa en `odrpack` y no en `scipy.odr`.
 
-La creación de instancias se realiza mediante la función de clase `funciones.fit_odr()` del módulo `Funciones.py` (ver [funciones.md](Funciones.md)).
+La clase encapsula:
+
+- parametros ajustados con incertidumbre,
+- resultado crudo de ODR,
+- estimadores calculados en un diccionario comun.
+
+La instancia se crea desde `fittools.funciones.Funciones.fit_odr()` (ver [funciones.md](funciones.md)).
 
 ---
 
 ## Dependencias
 
-- `scipy.odr.Output`: Objeto de salida de la rutina ODR.
-- `uncertainties.ufloat`: Manejo de valores con incertidumbre.
-- `numpy`: Operaciones numéricas y manejo de arrays.
+- `odrpack.OdrResult`: resultado crudo del ajuste ODR.
+- `uncertainties.ufloat`: manejo de valores con incertidumbre.
+- `numpy`: operaciones numericas.
 - Decoradores personalizados para control de excepciones (`excepciones`).
 
 ---
@@ -24,42 +29,83 @@ La creación de instancias se realiza mediante la función de clase `funciones.f
 
 ### Atributos principales
 
-| Atributo     | Tipo           | Descripción                                                |
-|--------------|----------------|------------------------------------------------------------|
-| `ODR_output` | `Output`       | Resultado bruto del ajuste ODR con información completa (objeto `scipy.odr.ODR.run`).   |
-| `parametros` | `List[ufloat]` | Parámetros ajustados con valor nominal e incertidumbre (mediante `Uncertainties`).    |
-| `R2`         | `Optional[float]` | Coeficiente de determinación (R²) del ajuste.             |
-| `R2_aj`      | `Optional[float]` | Coeficiente de determinación ajustado (R² ajustado).      |
-| `residuos`   | `Optional[np.ndarray]` | Vector de residuos: diferencia entre datos observados y modelo.|
+| Atributo     | Tipo           | Descripcion |
+|--------------|----------------|-------------|
+| `odrresult`  | `OdrResult`    | Resultado bruto del ajuste ODR (`odrpack`). |
+| `parametros` | `List[ufloat]` | Parametros ajustados con valor nominal e incertidumbre. |
+| `estimadores`| `dict`         | Diccionario de estimadores calculados (puede venir vacio). |
 
-### Métodos destacados
+### Diccionario `estimadores`
 
-#### `__str__()`
+Las claves dependen de lo pedido en `fit_odr(..., estimadores=...)`. Las claves soportadas en el proyecto son:
 
-Devuelve una representación legible y formateada del resultado del ajuste, mostrando parámetros con incertidumbre, valores R² y motivo(s) de finalización del algoritmo ODR.
+- `"R2"`
+- `"R2 ajustado"`
+- `"Residuos"`
+- `"Chi2 reducido"`
+- `"Matriz de correlacion"`
 
-#### `__iter__()`
+---
 
-Permite iterar sobre los atributos clave del objeto: parámetros, R², R² ajustado, residuos y salida ODR.
+## Metodos destacados
 
-#### `jackknife(f, data_x, data_y, ...)`
+### `__str__()`
 
-Calcula la incertidumbre de los parámetros usando el método estadístico **Jackknife**, realizando múltiples ajustes excluyendo datos individuales o subconjuntos según se especifique.
+Devuelve una representacion legible del resultado del ajuste:
 
-- Parámetros adicionales permiten controlar tolerancias, iteraciones, exclusiones o inclusiones específicas.
-- Devuelve una lista de parámetros con incertidumbre estimada y los resultados parciales de cada ajuste.
+- lista de parametros ajustados con incertidumbre,
+- `R2 ajustado` (si fue calculado),
+- `Chi2 reducido` (si fue calculado),
+- motivo de finalizacion (`stopreason`) tomado de `odrresult`.
+
+Si algun estimador no fue calculado, se muestra como `N/A`.
+
+### `__iter__()`
+
+Permite desempaquetar en este orden:
+
+1. `parametros`
+2. `estimadores["R2"]`
+3. `estimadores["R2 ajustado"]`
+4. `estimadores["Residuos"]`
+5. `estimadores["Chi2 reducido"]`
+6. `estimadores["Matriz de correlacion"]`
+7. `odrresult`
+
+### `jackknife(f, data_x, data_y, ...)`
+
+Estima incertidumbres de parametros con el metodo Jackknife, realizando multiples ajustes sobre subconjuntos de datos.
+
+- Permite incluir o excluir indices especificos.
+- Permite propagar opciones del ajuste (`p0`, tolerancias, iteraciones, etc.).
+- Retorna:
+  - lista de parametros con incertidumbre Jackknife,
+  - lista de ajustes parciales (`fits`), cada uno como `FitResult`.
+
+Errores esperables:
+
+- `ValueError` si se usan simultaneamente `incluir` y `excluir`.
+- `TypeError` si `f` no tiene un metodo callable `fit_odr`.
+- `RuntimeError` si no se pudo completar ningun ajuste en el proceso.
 
 ---
 
 ## Ejemplo de uso
 
 ```python
-from fittools import FR  # from fittools.fit_result import FitResult as fres
+from fittools import funcs
+import numpy as np
 
-# Supongamos que `modelo` es una instancia de Funciones que cuenta con el método fit_odr implementado
-resultado = modelo.fit_odr(x_data, y_data, p0=[1.0, 0.5])
+modelo = funcs(funcion=funcs.polinomio)
+
+x_data = np.array([1, 2, 3, 4, 5], dtype=float)
+y_data = 2 * x_data + 1
+
+resultado = modelo.fit_odr(x_data, y_data, beta0=[1, 1], estimadores=True)
 print(resultado)
 
-# Estimación de incertidumbres vía Jackknife
-parametros_jk, fits_jk = resultado.jackknife(modelo, x_data, y_data)
-# Los elementos de fits_jk son objetos creados por fit_odr y por lo tanto son instancias de FitResult en si mimsos
+print("R2 ajustado:", resultado.estimadores.get("R2 ajustado"))
+print("Stop reason:", resultado.odrresult.stopreason)
+
+parametros_jk, fits_jk = resultado.jackknife(modelo, x_data, y_data, p0=[1, 1])
+```
