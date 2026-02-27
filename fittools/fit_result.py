@@ -25,9 +25,8 @@ from ._decoradores import excepciones
 from dataclasses import dataclass
 from typing import Callable, List, Optional
 from uncertainties import ufloat
-from scipy.odr import Output
 import numpy as np
-
+from odrpack import OdrResult
 @dataclass
 class FitResult:
     """
@@ -40,7 +39,7 @@ class FitResult:
         - R2_aj Optional[float]: por defecto None Coeficiente de determinación ajustado para el número de parámetros y muestras.
         - residuos Optional[np.ndarray]: por defecto None Residuos del ajuste calculados como (y_observado - y_ajustado).
     """
-    odrresult: Output                               # Objeto de salida del ajuste ODR
+    odrresult: OdrResult                            # Objeto de salida del ajuste ODR
     parametros: List[ufloat]                        # Parámetros ajustados con incertidumbre
     estimadores: dict = None                        # Diccionario de estimadores calculados (R², R² ajustado, residuos, etc.)
 

@@ -1,5 +1,4 @@
 from typing import Callable, TypeAlias, Literal, Optional, Tuple, List
-from scipy.odr import ODR, Model, RealData  ##
 from odrpack import odr_fit
 from ._decoradores import excepciones
 from dataclasses import dataclass
@@ -28,6 +27,35 @@ class Funciones:                                                    # Clase de l
     def fit_odr(self, xdata, ydata, beta0, *,
                 errx=None, erry=None, errx_min=None, erry_min=None, estimadores = None,
                 **kwargs) -> Tuple[List[ufloat], List[Optional[np.ndarray]]]:
+        """
+        Ejecuta un ajuste ODR para la funcion configurada en la instancia.
+
+        El metodo valida la consistencia de los datos de entrada, construye los
+        pesos a partir de las incertidumbres experimentales y ejecuta `odr_fit`.
+        Luego empaqueta los parametros ajustados como `ufloat` y calcula
+        estimadores adicionales opcionales.
+
+        Args:
+            xdata: Valores de la variable independiente.
+            ydata: Valores de la variable dependiente.
+            beta0: Estimacion inicial de los parametros libres.
+            errx: Incertidumbre asociada a `xdata`.
+            erry: Incertidumbre asociada a `ydata`.
+            errx_min: Cota inferior para `errx` al construir los pesos.
+            erry_min: Cota inferior para `erry` al construir los pesos.
+            estimadores: None, True o coleccion con nombres de estimadores.
+            **kwargs: Argumentos extra compatibles con `odr_fit`.
+
+        Returns:
+            FitResult con:
+            - objeto OdrResult de odrpack (`odrresult`)
+            - parametros ajustados con incertidumbre (`parametros`)
+            - estimadores solicitados (`estimadores`)
+
+        Raises:
+            ValueError: Si faltan parametros iniciales, longitudes no coinciden o
+                se pasan pesos directos por `weight_x`/`weight_y`.
+        """
 
         if errx is None and errx_min is not None:
             raise ValueError("No se puede definir errx_min sin errx.")
@@ -57,31 +85,56 @@ class Funciones:                                                    # Clase de l
     @excepciones(critico=True, imprimir=True)
     def _check_array(self, a: np.ndarray, b: np.ndarray) -> None:
         """
-        Verifica que dos arrays tengan la misma longitud.
+        Verifica que dos arreglos tengan la misma longitud.
 
         Args:
-            -a (np.ndarray): Primer array a comparar.
-            -b (np.ndarray): Segundo array a comparar.
+            a (np.ndarray): Primer arreglo a comparar.
+            b (np.ndarray): Segundo arreglo a comparar.
 
-        Retorna:
-            -ValueError: Si los arrays no tienen la misma longitud.
+        Raises:
+            ValueError: Si los arreglos no tienen la misma longitud.
         """
         if len(a) != len(b):
             raise ValueError(f"Los arrays deben tener la misma longitud. Se obtuvo {len(a)} y {len(b)} respectivamente.")
 
     @excepciones(critico=True, imprimir=True)
     def _peso(self, err: np.ndarray, err_min: Optional[float] = None) -> np.ndarray:
-            if err_min is not None:
-                err_eff = np.maximum(err, err_min)
-            else:
-                err_eff = err
-            return  1.0 / err_eff**2
+        """
+        Calcula pesos estadisticos como inversa del error al cuadrado.
+
+        Si `err_min` se define, cada componente de `err` se acota por debajo
+        con ese valor para evitar pesos excesivos por errores muy pequenos.
+
+        Args:
+            err (np.ndarray): Incertidumbres experimentales.
+            err_min (Optional[float]): Cota inferior para `err`.
+
+        Returns:
+            np.ndarray: Vector de pesos `1 / err_eff**2`.
+        """
+        if err_min is not None:
+            err_eff = np.maximum(err, err_min)
+        else:
+            err_eff = err
+        return 1.0 / err_eff**2
 
     @excepciones(critico=True, imprimir=True)
     def _calcular_estimadores(self, estimadores, sol, xdata, ydata):
         """
-        Llama a las funciones individuales de cada estimador solicitado
-        y devuelve un diccionario con los resultados.
+        Calcula un conjunto configurable de metricas del ajuste.
+
+        Args:
+            estimadores: None, True o coleccion de nombres de estimadores.
+            sol: Resultado devuelto por ODR.
+            xdata: Valores de la variable independiente.
+            ydata: Valores observados de la variable dependiente.
+
+        Returns:
+            dict: Diccionario `nombre -> valor` con las metricas solicitadas.
+
+        Raises:
+            TypeError: Si `estimadores` no es None, True o coleccion valida.
+            ValueError: Si se solicita un estimador no soportado.
         """
         if estimadores is None:
             return {}
@@ -109,10 +162,32 @@ class Funciones:                                                    # Clase de l
 
     @excepciones(critico=True, imprimir=True)
     def _calc_residuos(self, sol, xdata, ydata):
+        """
+        Calcula los residuos del ajuste.
+
+        Args:
+            sol: Resultado devuelto por ODR.
+            xdata: Variable independiente usada en el ajuste.
+            ydata: Datos observados.
+
+        Returns:
+            np.ndarray: Diferencia entre datos observados y modelo evaluado.
+        """
         return ydata - self.funcion(xdata, sol.beta)
 
     @excepciones(critico=True, imprimir=True)
     def _calc_r2(self, sol, xdata, ydata):
+        """
+        Calcula el coeficiente de determinacion R2.
+
+        Args:
+            sol: Resultado devuelto por ODR.
+            xdata: Variable independiente usada en el ajuste.
+            ydata: Datos observados.
+
+        Returns:
+            float: Valor de R2.
+        """
         residuos = self._calc_residuos(sol, xdata, ydata)
         SCT = np.sum((ydata - np.mean(ydata))**2)
         SCR = np.sum(residuos**2)
@@ -120,6 +195,17 @@ class Funciones:                                                    # Clase de l
 
     @excepciones(critico=True, imprimir=True)
     def _calc_r2_ajustado(self, sol, xdata, ydata):
+        """
+        Calcula el coeficiente de determinacion ajustado.
+
+        Args:
+            sol: Resultado devuelto por ODR.
+            xdata: Variable independiente usada en el ajuste.
+            ydata: Datos observados.
+
+        Returns:
+            float: Valor de R2 ajustado por cantidad de parametros.
+        """
         R2 = self._calc_r2(sol, xdata, ydata)
         n = len(ydata)
         p = len(sol.beta)
@@ -127,12 +213,34 @@ class Funciones:                                                    # Clase de l
 
     @excepciones(critico=True, imprimir=True)
     def _calc_chi2_reducido(self, sol, xdata=None, ydata=None):
+        """
+        Calcula el chi cuadrado reducido del ajuste.
+
+        Args:
+            sol: Resultado devuelto por ODR.
+            xdata: No utilizado. Se conserva por compatibilidad de interfaz.
+            ydata: No utilizado. Se conserva por compatibilidad de interfaz.
+
+        Returns:
+            float: `chi2 / grados_de_libertad` o `np.inf` si dof <= 0.
+        """
         chi2 = sol.sum_square
         dof = len(sol.eps) - len(sol.beta)
         return chi2 / dof if dof > 0 else np.inf
 
     @excepciones(critico=True, imprimir=True)
     def _calc_matriz_correlacion(self, sol, xdata=None, ydata=None):
+        """
+        Calcula la matriz de correlacion entre parametros ajustados.
+
+        Args:
+            sol: Resultado devuelto por ODR.
+            xdata: No utilizado. Se conserva por compatibilidad de interfaz.
+            ydata: No utilizado. Se conserva por compatibilidad de interfaz.
+
+        Returns:
+            np.ndarray: Matriz de correlacion derivada de la covarianza.
+        """
         sd = sol.sd_beta
         cov = sol.cov_beta
         rv = sol.res_var
