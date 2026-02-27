@@ -14,7 +14,7 @@ Funcion: TypeAlias = FuncionExplicita | FuncionImplicita
 @dataclass
 class Funciones:                                                    # Clase de las funciones a ajustar
     funcion: Funcion
-    tipo: Literal["explicita", "implicita"]
+    tipo: Literal["explicita", "implicita"] = "explicita"
 
     def __str__(self) -> str:
         func_name = getattr(self.funcion, "__name__", "<función anónima>")
