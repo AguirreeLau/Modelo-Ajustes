@@ -1,13 +1,20 @@
-from typing import Callable, Optional, Tuple, List
-from scipy.odr import ODR, Model, RealData
+from typing import Callable, TypeAlias, Literal, Optional, Tuple, List
+from scipy.odr import ODR, Model, RealData  ##
+from odrpack import odr_fit
 from ._decoradores import excepciones
 from dataclasses import dataclass
 from uncertainties import ufloat
 import numpy as np
 
+FuncionExplicita: TypeAlias = Callable[[np.ndarray, np.ndarray], np.ndarray]
+FuncionImplicita: TypeAlias = Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray]
+
+Funcion: TypeAlias = FuncionExplicita | FuncionImplicita
+
 @dataclass
 class Funciones:                                                    # Clase de las funciones a ajustar
-    funcion: Callable[[List[float], np.ndarray], np.ndarray]
+    funcion: Funcion
+    tipo: Literal["explicita", "implicita"]
 
     def __str__(self) -> str:
         func_name = getattr(self.funcion, "__name__", "<función anónima>")
@@ -16,6 +23,38 @@ class Funciones:                                                    # Clase de l
             return f"Función {func_name}:\n{doc.strip()}"
         else:
             return f"Función {func_name}: Sin descripción disponible."
+
+    @excepciones(critico=True, imprimir=True)
+    def fit_odr(self, xdata, ydata, beta0, *,
+                errx=None, erry=None, errx_min=None, erry_min=None, estimadores = None,
+                **kwargs) -> Tuple[List[ufloat], List[Optional[np.ndarray]]]:
+
+        if errx is None and errx_min is not None:
+            raise ValueError("No se puede definir errx_min sin errx.")
+        if erry is None and erry_min is not None:
+            raise ValueError("No se puede definir erry_min sin erry.")
+        if "weight_x" in kwargs or "weight_y" in kwargs:
+            raise ValueError("No se deben pasar pesos directamente. Use errx/erry.")
+        if beta0 is None or len(beta0) == 0:
+            raise ValueError("Insertar parámetros iniciales de busqueda")
+        self._check_array(xdata, ydata)
+        if errx is not None:
+            self._check_array(xdata, errx)
+        if erry is not None:
+            self._check_array(ydata, erry)
+
+        wx = self._peso(errx, errx_min) if errx is not None else None
+        wy = self._peso(erry, erry_min) if erry is not None else None
+
+        sol = odr_fit(self.funcion, xdata, ydata, beta0, weight_x=wx, weight_y=wy, **kwargs)
+        beta_opt = [ufloat(val, err) for val, err in zip(sol.beta, sol.sd_beta)]
+
+        estimadores_resultados = self._calcular_estimadores(estimadores, sol, xdata, ydata)
+
+        from .fit_result import FitResult
+        return sol, beta_opt, estimadores_resultados        # FALTA CAMBIAR EL RETURN PARA QUE DEVUELVA UN OBJETO DE LA CLASE FitResult CON TODOS LOS ESTIMADORES EN UN DICT COMÚN.
+        # return FitResult(ODR_output=sol, parametros=beta_opt, estimadores=estimadores_resultados)
+
 
     def _check_array(self, a: np.ndarray, b: np.ndarray) -> None:
         """
@@ -30,88 +69,73 @@ class Funciones:                                                    # Clase de l
         """
         if len(a) != len(b):
             raise ValueError(f"Los arrays deben tener la misma longitud. Se obtuvo {len(a)} y {len(b)} respectivamente.")
-
+    
     @excepciones(critico=True, imprimir=True)
-    def _coef_determinacion(self, data_y: np.ndarray, residuos: np.ndarray, cant_params: int) -> float:
+    def _peso(err: np.ndarray, err_min: Optional[float] = None) -> np.ndarray:
+            if err_min is not None:
+                err_eff = np.maximum(err, err_min)
+            else:
+                err_eff = err
+            return  1.0 / err_eff**2
+
+    def _calcular_estimadores(self, estimadores, sol, xdata, ydata):
         """
-        Calcula el coeficiente de determinación R² y su versión ajustada del modelo.
-
-        Args:
-            -data_y (np.ndarray): Valores observados de la variable dependiente.
-            -residuos (np.ndarray): Diferencias entre valores observados y valores predichos por el modelo.
-            -cant_params (int): Número de parámetros libres usados en el modelo (para ajuste de R²).
-
-        Retorna:
-            Tuple[float, float]
-                - R² (coeficiente de determinación).
-                - R² ajustado, penaliza la complejidad del modelo considerando el número de parámetros.
-        
-        Notas:
-            - R² mide la proporción de la varianza explicada por el modelo.
-            - R² ajustado es más conservador y evita la sobreestimación al incluir más parámetros.
+        Llama a las funciones individuales de cada estimador solicitado
+        y devuelve un diccionario con los resultados.
         """
-        SCR = np.sum(residuos**2)                                   # Suma de cuadrados de los residuos   
-        SCT = np.sum((data_y - np.mean(data_y))**2)                 # Suma de cuadrados totales
-        R2 = 1 - (SCR / SCT)
-        n = len(data_y)
-        R2_aj = 1 - (1 - R2)*(n - 1)/(n - cant_params - 1)
+        if estimadores is None:
+            return {}
 
-        return R2, R2_aj
+        disponibles = {
+            "R2": self._calc_r2,
+            "R2 ajustado": self._calc_r2_ajustado,
+            "Residuos": self._calc_residuos,
+            "Chi2 reducido": self._calc_chi2_reducido,
+            "Matriz de correlación": self._calc_matriz_correlacion,
+        }
+        if estimadores is True:
+            seleccion = disponibles.keys()
+        elif isinstance(estimadores, (list, tuple, set)):
+            seleccion = estimadores
+        else:
+            raise TypeError("estimadores debe ser None, True o lista de nombres.")
 
-    @excepciones(critico=True, imprimir=True)
-    def fit_odr(self, data_x: np.ndarray, data_y: np.ndarray, p0: list[float], err_x: Optional[np.ndarray]=None, err_y: Optional[np.ndarray]=None, estimadores: Optional[bool]=True, sstol: Optional[float]=None, partol: Optional[float]=None, maxit: Optional[int]=None, iprint: Optional[int]=None) -> Tuple[List[ufloat], List[Optional[np.ndarray]]]:
-        """
-        Ajusta un modelo a los datos utilizando la técnica de Orthogonal Distance Regression (ODR).
+        resultados = {}
+        for nombre in seleccion:
+            if nombre not in disponibles:
+                raise ValueError(f"Estimador desconocido: {nombre}")
+            resultados[nombre] = disponibles[nombre](sol, xdata, ydata)
+        return resultados
 
-        Args:
-            - data_x (np.ndarray): Datos de la variable independiente.
-            - data_y (np.ndarray): Datos de la variable dependiente.
-            - err_x (np.ndarray): Errores en la variable independiente.
-            - err_y (np.ndarray): Errores en la variable dependiente.
-            - p0 (list): Parámetros iniciales para el ajuste.
-            - estimadores (bool): Si True, calcula los estimadores de ajuste (R², R² ajustado y residuos).
-            - sstol (float): Tolerancia para convergencia en suma de cuadrados (default None, default de Scipy).
-            - partol (float): Tolerancia para convergencia en parámetros (default None, default de Scipy).
-            - maxit (int): Máximo número de iteraciones permitidas (default None, default de Scipy).
-            - iprint (int): Control de impresión de ODR (default None, default de Scipy).
-        Retorna:
-            -Tuple:
-                p_opt (list): Parámetros ajustados como "ufloat" (valor ± error).
-                estimadores (list or None): Lista [R2, R2_aj, residuos] si estimadores es True, o [None, None, None].
-        Notas:
-            - Se utiliza ODR para ajustar el modelo a los datos, considerando errores en ambas variables.
-            - Se toma sd_beta como representación del error en los prámetros. De necesitarse covarianzas, acceder a resultado.cov_beta.
-            - sd_beta se calcula como la raíz cuadrada de la diagonal de la matriz de covarianza escalada por la varianza residual del ajuste.
-            - Los parámetros ajustados se devuelven como "ufloat" para incluir incertidumbres.
-        """
-        if not p0 :
-            raise ValueError("Insertar parámetros iniciales de busqueda")
-        self._check_array(data_x, data_y)
-        if err_x is not None:
-            self._check_array(data_x, err_x)
-        if err_y is not None:
-            self._check_array(data_y, err_y)
+    def _calc_residuos(self, sol, xdata, ydata):
+        return ydata - self.funcion(sol.beta, xdata)
 
-        cant_params = len(p0)
+    def _calc_r2(self, sol, xdata, ydata):
+        residuos = self._calc_residuos(sol, xdata, ydata)
+        SCT = np.sum((ydata - np.mean(ydata))**2)
+        SCR = np.sum(residuos**2)
+        return 1 - (SCR / SCT)
 
-        modelo = Model(self.funcion)
-        datos = RealData(data_x, data_y, sx = err_x, sy = err_y)
-        ajuste  = ODR(datos, modelo, beta0 = p0, sstol = sstol, partol = partol, maxit = maxit, iprint = iprint)
+    def _calc_r2_ajustado(self, sol, xdata, ydata):
+        R2 = self._calc_r2(sol, xdata, ydata)
+        n = len(ydata)
+        p = len(sol.beta)
+        return 1 - (1 - R2)*(n - 1)/(n - p - 1)
 
-        resultado = ajuste.run()
-        p_opt = [ufloat(b, err) for b, err in zip(resultado.beta, resultado.sd_beta)]
+    def _calc_chi2_reducido(self, sol, xdata=None, ydata=None):
+        chi2 = sol.sum_square
+        dof = len(sol.eps) - len(sol.beta)
+        return chi2 / dof if dof > 0 else np.inf
 
-        R2, R2_aj, residuos = None, None, None
-        if estimadores:
-            residuos = data_y - self.funcion(resultado.beta, data_x)
-            R2, R2_aj = self._coef_determinacion(data_y, residuos, cant_params)
-
-        from .fit_result import FitResult
-        return FitResult(ODR_output=resultado, parametros=p_opt, R2=R2, R2_aj=R2_aj, residuos=residuos)
+    def _calc_matriz_correlacion(self, sol, xdata=None, ydata=None):
+        sd = sol.sd_beta
+        cov = sol.cov_beta
+        rv = sol.res_var
+        return (cov * rv) / np.outer(sd, sd)
 
 ### Funciones comunes
     @staticmethod
-    def polinomio(params, x):
+    def polinomio(x, params):
         """
         Polinomio de grado n: y = a_n*x^n + ... + a_1*x + a_0
 
@@ -126,7 +150,7 @@ class Funciones:                                                    # Clase de l
         return sum(b * np.power(x, i) for i, b in enumerate(params))
 
     @staticmethod
-    def APV (params, x):
+    def APV (x, params):
         """
         Módelo Pseudo-Voigt asimétrico para el ajuste picos. 
         Sean G(x) y L(x) una función Gaussiana y Lorentziana respectivamente, el modelo PV (Pseudo-Voigt) considera las contribuciones de ambas

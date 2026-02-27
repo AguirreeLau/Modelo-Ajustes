@@ -45,6 +45,7 @@ class FitResult:
     R2: Optional[float] = None                      # Coeficiente de determinación
     R2_aj: Optional[float] = None                   # R2 ajustado
     residuos: Optional[np.ndarray] = None           # Residuos del ajuste (y_exp - f(*p_opt, x_exp))
+    ## FALTA CAMBIAR LOS ATRIBUTOS DE LA CLASE,TODOS LOS ESTIMADORES PASA A UN DICT QUE COMÚN.
 
     def __str__(self) -> str:
         """
