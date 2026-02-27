@@ -108,7 +108,7 @@ class Funciones:                                                    # Clase de l
         return resultados
 
     def _calc_residuos(self, sol, xdata, ydata):
-        return ydata - self.funcion(sol.beta, xdata)
+        return ydata - self.funcion(xdata, sol.beta)
 
     def _calc_r2(self, sol, xdata, ydata):
         residuos = self._calc_residuos(sol, xdata, ydata)
