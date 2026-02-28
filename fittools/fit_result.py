@@ -60,7 +60,7 @@ class FitResult:
         r2aj_str = f"R² ajustado = {self.estimadores["R2 ajustado"]:.4f}" if self.estimadores and self.estimadores.get("R2 ajustado") is not None else "R² ajustado = N/A"
         chi2_red_str = f"χ² reducido = {self.estimadores["Chi2 reducido"]:.4f}" if self.estimadores and self.estimadores.get("Chi2 reducido") is not None else "χ² reducido = N/A"
 
-        stopreason_raw = getattr(self.ODR_output, "stopreason", None) if self.ODR_output else None
+        stopreason_raw = getattr(self.odrresult, "stopreason", None) if self.odrresult else None
         if isinstance(stopreason_raw, (list, tuple)):
             stop_lines = "\n".join(f"      - {r}" for r in stopreason_raw)
         elif isinstance(stopreason_raw, str):
@@ -76,7 +76,7 @@ class FitResult:
         border = "#" * 32
         title = "####  Resultado del ajuste  ####"
         return f"{border}\n{title}\n{border}\n{content}\n{border}"
-    
+
     def __iter__(self):
         """
         Iterador que permite desempaquetar los atributos principales del resultado.
