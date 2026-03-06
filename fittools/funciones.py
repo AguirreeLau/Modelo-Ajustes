@@ -21,6 +21,13 @@ class Funciones:                                                    # Clase de l
     funcion: Funcion
     tipo: Literal["explicita", "implicita"] = "explicita"
 
+    def __post_init__(self) -> None:
+        tipo_func = getattr(self.funcion, "tipo", None)
+        if self.tipo == "explicita" and tipo_func == "implicita":
+            self.tipo = "implicita"
+        elif self.tipo not in ("explicita", "implicita"):
+            raise ValueError("`tipo` debe ser 'explicita' o 'implicita'.")
+
     def __str__(self) -> str:
         func_name = getattr(self.funcion, "__name__", "<función anónima>")
         doc = self.funcion.__doc__
@@ -91,8 +98,9 @@ class Funciones:                                                    # Clase de l
 
         if self.tipo == "explicita":
             return self._ODR_explicito(xdata, ydata, beta0, wx=wx, wy=wy, estimadores=estimadores, **kwargs)
-        else:
+        if self.tipo == "implicita":
             return self._ODR_implicito(xdata, ydata, beta0, wx=wx, wy=wy, estimadores=estimadores, **kwargs)
+        raise ValueError("`tipo` debe ser 'explicita' o 'implicita'.")
 
 # Diferenciación de modelos explícitos e implícitos
     def _ODR_explicito(self, xdata, ydata, beta0, *,
