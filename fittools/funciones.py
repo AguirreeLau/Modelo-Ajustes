@@ -65,7 +65,8 @@ class Funciones:                                                    # Clase de l
             raise ValueError("No se deben pasar pesos directamente. Use errx/erry.")
         if beta0 is None or len(beta0) == 0:
             raise ValueError("Insertar parámetros iniciales de busqueda")
-        self._check_array(xdata, ydata)
+        if self.tipo == "explicita":
+            self._check_array(xdata, ydata)
         if errx is not None:
             self._check_array(xdata, errx)
         if erry is not None:
