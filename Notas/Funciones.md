@@ -23,6 +23,7 @@ Este modulo utiliza las siguientes librerias:
     - `funcion`: funcion callable del modelo.
     - `tipo`: `"explicita"` o `"implicita"` (default: `"explicita"`).
   - Metodos:
+    - `__post_init__`
     - `__str__`
     - `_check_array`
     - `_peso`
@@ -32,6 +33,8 @@ Este modulo utiliza las siguientes librerias:
     - `_calc_r2_ajustado`
     - `_calc_chi2_reducido`
     - `_calc_matriz_correlacion`
+    - `_calc_delta`
+    - `_calc_modulo_delta`
     - `fit_odr`
   - Funciones estaticas para modelos comunes:
     - `polinomio`
@@ -46,12 +49,23 @@ Este modulo utiliza las siguientes librerias:
 - Tipo explicito: `Callable[[np.ndarray, np.ndarray], np.ndarray]`.
 - Tipo implicito: `Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray]`.
 - Debe representar el modelo a ajustar.
+- Si la funcion fue decorada con `@modelo_implicito`, `Funciones` infiere
+  automaticamente `tipo="implicita"` en `__post_init__`.
 
 ---
 
 ### Metodo `__str__(self)`
 
 - Devuelve nombre y docstring de la funcion contenida.
+
+---
+
+### Metodo `__post_init__(self)`
+
+- Valida que `tipo` sea `"explicita"` o `"implicita"`.
+- Si `tipo` queda en su valor default y la funcion tiene atributo
+  `tipo="implicita"` (agregado por `@modelo_implicito`), cambia automaticamente
+  la instancia a modo implicito.
 
 ---
 
@@ -115,7 +129,8 @@ Realiza el ajuste ODR con los siguientes pasos:
    - `err_eff = max(err, err_min)` si hay piso.
 4. Ejecuta `odr_fit(self.funcion, xdata, ydata, beta0, weight_x=wx, weight_y=wy, **kwargs)`.
 5. Convierte `sol.beta` y `sol.sd_beta` a lista de `ufloat`.
-6. Calcula estimadores opcionales con `_calcular_estimadores`.
+6. Calcula estimadores opcionales con `_calcular_estimadores`, usando un
+   diccionario de estimadores disponibles segun el tipo de modelo.
 7. Devuelve `FitResult(odrresult=sol, parametros=..., estimadores=...)`.
 
 **Importante**
@@ -126,12 +141,17 @@ Realiza el ajuste ODR con los siguientes pasos:
   - `None`: no calcula estimadores (`{}`).
   - `True`: calcula todos los disponibles.
   - `list/tuple/set`: calcula solo los nombres pedidos.
-- Estimadores soportados:
+- Estimadores soportados en modo explicito:
   - `"R2"`
   - `"R2 ajustado"`
   - `"Residuos"`
   - `"Chi2 reducido"`
   - `"Matriz de correlacion"`
+- Estimadores soportados en modo implicito:
+  - `"Chi2 reducido"`
+  - `"Matriz de correlacion"`
+  - `"delta"` (array con forma `(2, n)` como `[delta_x, delta_y]`)
+  - `"modulo_delta"` (norma punto a punto de `delta`)
 - El resultado crudo del ajuste queda en `resultado.odrresult` (tipo `odrpack.OdrResult`).
 
 ---

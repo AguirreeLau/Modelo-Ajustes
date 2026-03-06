@@ -37,13 +37,20 @@ La instancia se crea desde `fittools.funciones.Funciones.fit_odr()` (ver [funcio
 
 ### Diccionario `estimadores`
 
-Las claves dependen de lo pedido en `fit_odr(..., estimadores=...)`. Las claves soportadas en el proyecto son:
+Las claves dependen de lo pedido en `fit_odr(..., estimadores=...)` y del tipo
+de modelo (`explicita` o `implicita`):
 
-- `"R2"`
-- `"R2 ajustado"`
-- `"Residuos"`
-- `"Chi2 reducido"`
-- `"Matriz de correlacion"`
+- Modo explicito:
+  - `"R2"`
+  - `"R2 ajustado"`
+  - `"Residuos"`
+  - `"Chi2 reducido"`
+  - `"Matriz de correlacion"`
+- Modo implicito:
+  - `"Chi2 reducido"`
+  - `"Matriz de correlacion"`
+  - `"delta"` (array con forma `(2, n)` como `[delta_x, delta_y]`)
+  - `"modulo_delta"` (norma punto a punto de `delta`)
 
 ---
 
@@ -71,6 +78,9 @@ Permite desempaquetar en este orden:
 5. `estimadores["Chi2 reducido"]`
 6. `estimadores["Matriz de correlacion"]`
 7. `odrresult`
+
+Nota: las claves especificas de modelos implicitos (`"delta"` y
+`"modulo_delta"`) se consultan directamente desde `resultado.estimadores`.
 
 ### `jackknife(f, data_x, data_y, ...)`
 

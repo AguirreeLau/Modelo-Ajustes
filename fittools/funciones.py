@@ -8,6 +8,13 @@ from uncertainties import ufloat
 import numpy as np
 
 def modelo_implicito(func):
+    """
+    Marca una función de modelo como implícita.
+
+    Este decorador agrega el atributo `tipo = "implicita"` al callable
+    para que `Funciones.__post_init__` pueda inferir automáticamente
+    el modo de ajuste al instanciar la clase.
+    """
     func.tipo = "implicita"
     return func
 
@@ -22,6 +29,16 @@ class Funciones:                                                    # Clase de l
     tipo: Literal["explicita", "implicita"] = "explicita"
 
     def __post_init__(self) -> None:
+        """
+        Normaliza y valida el atributo `tipo` de la instancia.
+
+        Si la función de entrada fue decorada con `@modelo_implicito`,
+        y `tipo` quedó en su valor por defecto (`"explicita"`), se cambia
+        automáticamente a `"implicita"`.
+
+        Raises:
+            ValueError: Si `tipo` no es `"explicita"` ni `"implicita"`.
+        """
         tipo_func = getattr(self.funcion, "tipo", None)
         if self.tipo == "explicita" and tipo_func == "implicita":
             self.tipo = "implicita"
@@ -107,22 +124,19 @@ class Funciones:                                                    # Clase de l
                 wx=None, wy=None, estimadores = None,
                 **kwargs) -> FitResult:
         """
-        Ejecuta un ajuste ODR para la funcion configurada en la instancia.
+        Ejecuta un ajuste ODR explícito.
 
-        El metodo valida la consistencia de los datos de entrada, construye los
-        pesos a partir de las incertidumbres experimentales y ejecuta `odr_fit`.
-        Luego empaqueta los parametros ajustados como `ufloat` y calcula
-        estimadores adicionales opcionales.
+        Usa `task='explicit-ODR'` y calcula los estimadores habilitados para
+        modelos explícitos.
 
         Args:
             xdata: Valores de la variable independiente.
             ydata: Valores de la variable dependiente.
             beta0: Estimacion inicial de los parametros libres.
-            errx: Incertidumbre asociada a `xdata`.
-            erry: Incertidumbre asociada a `ydata`.
-            errx_min: Cota inferior para `errx` al construir los pesos.
-            erry_min: Cota inferior para `erry` al construir los pesos.
-            estimadores: None, True o coleccion con nombres de estimadores.
+            wx: Pesos en x ya procesados por `fit_odr`.
+            wy: Pesos en y ya procesados por `fit_odr`.
+            estimadores: None, True o coleccion con nombres de estimadores
+                disponibles para modo explícito.
             **kwargs: Argumentos extra compatibles con `odr_fit`.
 
         Returns:
@@ -131,15 +145,28 @@ class Funciones:                                                    # Clase de l
             - parametros ajustados con incertidumbre (`parametros`)
             - estimadores solicitados (`estimadores`)
 
-        Raises:
-            ValueError: Si faltan parametros iniciales, longitudes no coinciden o
-                se pasan pesos directos por `weight_x`/`weight_y`.
+        Notes:
+            Estimadores disponibles en este modo:
+            - `"R2"`
+            - `"R2 ajustado"`
+            - `"Residuos"`
+            - `"Chi2 reducido"`
+            - `"Matriz de correlación"`
         """
 
         sol = odr_fit(self.funcion, xdata, ydata, beta0, weight_x=wx, weight_y=wy, task='explicit-ODR', **kwargs)
         beta_opt = [ufloat(val, err) for val, err in zip(sol.beta, sol.sd_beta)]
 
-        estimadores_res = self._calcular_estimadores(estimadores, sol, xdata, ydata)
+        disponibles_explicito = {
+            "R2": self._calc_r2,
+            "R2 ajustado": self._calc_r2_ajustado,
+            "Residuos": self._calc_residuos,
+            "Chi2 reducido": self._calc_chi2_reducido,
+            "Matriz de correlación": self._calc_matriz_correlacion,
+        }
+        estimadores_res = self._calcular_estimadores(
+            estimadores, sol, xdata, ydata, disponibles_explicito
+        )
 
         return FitResult(odrresult=sol, parametros=beta_opt, estimadores=estimadores_res)
 
@@ -147,22 +174,19 @@ class Funciones:                                                    # Clase de l
                 wx=None, wy=None, estimadores = None,
                 **kwargs) -> FitResult:
         """
-        Ejecuta un ajuste ODR para la funcion configurada en la instancia.
+        Ejecuta un ajuste ODR implícito.
 
-        El metodo valida la consistencia de los datos de entrada, construye los
-        pesos a partir de las incertidumbres experimentales y ejecuta `odr_fit`.
-        Luego empaqueta los parametros ajustados como `ufloat` y calcula
-        estimadores adicionales opcionales.
+        Construye el arreglo combinado `X = [xdata; ydata]`, prepara los pesos
+        correspondientes y ejecuta `odr_fit` con `task='implicit-ODR'`.
 
         Args:
             xdata: Valores de la variable independiente.
             ydata: Valores de la variable dependiente.
             beta0: Estimacion inicial de los parametros libres.
-            errx: Incertidumbre asociada a `xdata`.
-            erry: Incertidumbre asociada a `ydata`.
-            errx_min: Cota inferior para `errx` al construir los pesos.
-            erry_min: Cota inferior para `erry` al construir los pesos.
-            estimadores: None, True o coleccion con nombres de estimadores.
+            wx: Pesos en x ya procesados por `fit_odr`.
+            wy: Pesos en y ya procesados por `fit_odr`.
+            estimadores: None, True o coleccion con nombres de estimadores
+                disponibles para modo implícito.
             **kwargs: Argumentos extra compatibles con `odr_fit`.
 
         Returns:
@@ -171,9 +195,12 @@ class Funciones:                                                    # Clase de l
             - parametros ajustados con incertidumbre (`parametros`)
             - estimadores solicitados (`estimadores`)
 
-        Raises:
-            ValueError: Si faltan parametros iniciales, longitudes no coinciden o
-                se pasan pesos directos por `weight_x`/`weight_y`.
+        Notes:
+            Estimadores disponibles en este modo:
+            - `"Chi2 reducido"`
+            - `"Matriz de correlación"`
+            - `"delta"` (array con forma `(2, n)` como `[delta_x, delta_y]`)
+            - `"modulo_delta"` (norma punto a punto de `delta`)
         """
         X = np.vstack([xdata, ydata])
         N = len(xdata)
@@ -191,7 +218,15 @@ class Funciones:                                                    # Clase de l
         sol = odr_fit(self.funcion, X, array_nulo, beta0, weight_x=wX, weight_y=None, task='implicit-ODR', **kwargs)
         beta_opt = [ufloat(val, err) for val, err in zip(sol.beta, sol.sd_beta)]
 
-        estimadores_res = self._calcular_estimadores(estimadores, sol, xdata, ydata)
+        disponibles_implicito = {
+            "Chi2 reducido": self._calc_chi2_reducido,
+            "Matriz de correlación": self._calc_matriz_correlacion,
+            "delta": self._calc_delta,
+            "modulo_delta": self._calc_modulo_delta,
+        }
+        estimadores_res = self._calcular_estimadores(
+            estimadores, sol, xdata, ydata, disponibles_implicito
+        )
 
         return FitResult(odrresult=sol, parametros=beta_opt, estimadores=estimadores_res)
 
@@ -233,7 +268,7 @@ class Funciones:                                                    # Clase de l
         return 1.0 / err_eff**2
 
     @excepciones(critico=True, imprimir=True)
-    def _calcular_estimadores(self, estimadores, sol, xdata, ydata):
+    def _calcular_estimadores(self, estimadores, sol, xdata, ydata, disponibles):
         """
         Calcula un conjunto configurable de metricas del ajuste.
 
@@ -242,6 +277,8 @@ class Funciones:                                                    # Clase de l
             sol: Resultado devuelto por ODR.
             xdata: Valores de la variable independiente.
             ydata: Valores observados de la variable dependiente.
+            disponibles: Diccionario `nombre -> funcion` para los estimadores
+                habilitados en el modo de ajuste actual.
 
         Returns:
             dict: Diccionario `nombre -> valor` con las metricas solicitadas.
@@ -249,17 +286,14 @@ class Funciones:                                                    # Clase de l
         Raises:
             TypeError: Si `estimadores` no es None, True o coleccion valida.
             ValueError: Si se solicita un estimador no soportado.
+
+        Notes:
+            El conjunto de claves permitidas depende de `disponibles`, que se
+            construye en `_ODR_explicito` o `_ODR_implicito`.
         """
         if estimadores is None:
             return {}
 
-        disponibles = {
-            "R2": self._calc_r2,
-            "R2 ajustado": self._calc_r2_ajustado,
-            "Residuos": self._calc_residuos,
-            "Chi2 reducido": self._calc_chi2_reducido,
-            "Matriz de correlación": self._calc_matriz_correlacion,
-        }
         if estimadores is True:
             seleccion = disponibles.keys()
         elif isinstance(estimadores, (list, tuple, set)):
@@ -360,6 +394,27 @@ class Funciones:                                                    # Clase de l
         rv = sol.res_var
         return (cov * rv) / np.outer(sd, sd)
 
+    @excepciones(critico=True, imprimir=True)
+    def _calc_delta(self, sol, xdata=None, ydata=None):
+        """
+        Extrae los vectores de correccion del ajuste implícito.
+
+        Returns:
+            np.ndarray: Array con forma `(2, n)` como `[delta_x, delta_y]`.
+        """
+        return np.asarray(sol.delta)
+
+    @excepciones(critico=True, imprimir=True)
+    def _calc_modulo_delta(self, sol, xdata=None, ydata=None):
+        """
+        Calcula el módulo del vector `delta` punto a punto.
+
+        Returns:
+            np.ndarray: `sqrt(delta_x**2 + delta_y**2)`.
+        """
+        delta = self._calc_delta(sol)
+        return np.sqrt(delta[0]**2 + delta[1]**2)
+
 ### Funciones comunes
 ## Explicitas
     @staticmethod
@@ -413,6 +468,18 @@ class Funciones:                                                    # Clase de l
     @staticmethod
     @modelo_implicito
     def elipse(X, params):
+        """
+        Modelo implícito de elipse centrada en `(h, k)`.
+
+        Args:
+            X (np.ndarray): Arreglo con forma `(2, n)` donde `X[0] = x` y
+                `X[1] = y`.
+            params (array-like): Parámetros `[h, k, a, b]`.
+
+        Returns:
+            np.ndarray: Evaluación de
+                `((x - h)/a)**2 + ((y - k)/b)**2 - 1`.
+        """
         x, y = X[0], X[1]
         h, k, a, b = params
         return ((x - h)/a)**2 + ((y - k)/b)**2 - 1
@@ -420,6 +487,17 @@ class Funciones:                                                    # Clase de l
     @staticmethod
     @modelo_implicito
     def circunferencia(X, params):
+        """
+        Modelo implícito de circunferencia centrada en `(h, k)`.
+
+        Args:
+            X (np.ndarray): Arreglo con forma `(2, n)` donde `X[0] = x` y
+                `X[1] = y`.
+            params (array-like): Parámetros `[h, k, r]`.
+
+        Returns:
+            np.ndarray: Evaluación de `(x - h)**2 + (y - k)**2 - r**2`.
+        """
         x, y = X[0], X[1]
         h, k, r = params
         return (x - h)**2 + (y - k)**2 - r**2
