@@ -97,7 +97,7 @@ class FitResult:
         yield self.odrresult
 
     @excepciones(critico=True, imprimir=True)
-    def jackknife(self, f, data_x: np.ndarray, data_y: np.ndarray, p0: list[float]=None, err_x: Optional[np.ndarray]=None, err_y: Optional[np.ndarray]=None, estimadores: Optional[bool]=True, sstol: Optional[float]=None, partol: Optional[float]=None, maxit: Optional[int]=None, iprint: Optional[int]=None, excluir: Optional[List[int]] = None, incluir: Optional[List[int]] = None) -> List[ufloat]:
+    def jackknife(self, f, data_x: np.ndarray, data_y: np.ndarray, p0: list[float]=None, err_x: Optional[np.ndarray]=None, err_y: Optional[np.ndarray]=None, estimadores: Optional[bool]=True, sstol: Optional[float]=None, partol: Optional[float]=None, maxit: Optional[int]=None, iprint: Optional[int]=None, excluir: Optional[List[int]] = None, incluir: Optional[List[int]] = None) -> tuple[List[ufloat], List["FitResult"]]:
         """
         Estima las incertidumbres en los parámetros del ajuste mediante el método estadístico Jackknife.
 
@@ -112,12 +112,14 @@ class FitResult:
             -sstol Optional[float], opcional: Tolerancia para convergencia del ajuste (default None).
             -partol Optional[float], opcional: Tolerancia para parámetros en ajuste (default None).
             -maxit Optional[int], opcional: Número máximo de iteraciones del algoritmo ODR (default None).
-            -iprint Optional[int], opcional: Nivel de verbosidad del ajuste (default None).
+            -iprint Optional[int], opcional: Nivel de verbosidad heredado de la
+             API anterior. Se traduce internamente a `report` de `odrpack`.
             -excluir Optional[List[int]], opcional: Índices de subconjuntos a excluir del jackknife (default None).
             -incluir Optional[List[int]], opcional: Índices de subconjuntos a incluir exclusivamente (default None).
 
         Returns:
-            - List[ufloat]: Lista de parámetros ajustados con sus incertidumbres estimadas por Jackknife.
+            - tuple[List[ufloat], List[FitResult]]: Parámetros estimados por
+              Jackknife y lista de ajustes parciales usados en el cálculo.
 
         Raises:
         - ValueError: Si se pasan simultáneamente argumentos exclur e incluir.
@@ -136,11 +138,35 @@ class FitResult:
                 raise ValueError("No hay parámetros originales para inferir p0.")
             p0 = est_originales
 
+        data_x = np.asarray(data_x)
+        data_y = np.asarray(data_y)
+        err_x = np.asarray(err_x) if err_x is not None else None
+        err_y = np.asarray(err_y) if err_y is not None else None
+
         n = len(data_x)
         fits = []
         mask = np.ones(n, dtype=bool)               # Mascara booleana para excluir los datos i-ésimos
         excluir_set = set(excluir) if excluir is not None else set()
         incluir_set = set(incluir) if incluir is not None else set()
+
+        fit_kwargs = {"estimadores": estimadores}
+        if sstol is not None:
+            fit_kwargs["sstol"] = sstol
+        if partol is not None:
+            fit_kwargs["partol"] = partol
+        if maxit is not None:
+            fit_kwargs["maxit"] = maxit
+        if iprint is not None:
+            if not isinstance(iprint, int):
+                raise TypeError("iprint debe ser int o None.")
+            if iprint <= 0:
+                fit_kwargs["report"] = "none"
+            elif iprint == 1:
+                fit_kwargs["report"] = "short"
+            elif iprint == 2:
+                fit_kwargs["report"] = "long"
+            else:
+                fit_kwargs["report"] = "iteration"
 
         for i in range(n):
             if incluir_set and i not in incluir_set:
@@ -157,7 +183,12 @@ class FitResult:
             mask[i] = True                          # Retornar el i-ésimo dato de la mascara para la siguiente iteración
             
             try:
-                fit_res = f.fit_odr(x_i, y_i, p0, err_x=ex_i, err_y=ey_i, estimadores=estimadores, sstol = sstol, partol = partol, maxit = maxit, iprint = iprint)
+                iter_kwargs = dict(fit_kwargs)
+                if ex_i is not None:
+                    iter_kwargs["errx"] = ex_i
+                if ey_i is not None:
+                    iter_kwargs["erry"] = ey_i
+                fit_res = f.fit_odr(x_i, y_i, p0, **iter_kwargs)
             except Exception as e:
                 print(f"Se omitió subconjunto {i} por: {e}")
                 continue

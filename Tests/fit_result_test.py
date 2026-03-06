@@ -1,69 +1,116 @@
-import pytest
 import numpy as np
+import pytest
+
 from fittools.fit_result import FitResult
 from fittools.funciones import Funciones
-from uncertainties.core import UFloat
-from uncertainties import ufloat
-from types import SimpleNamespace
 
-# --- Fixtures ---
 
 @pytest.fixture
-def fit_result_mock():
-    parametros = [ufloat(1.0, 0.1), ufloat(2.0, 0.2)]
-    ODR_output = SimpleNamespace(stopreason="Convergencia")
-    R2, R2_aj = 0.95, 0.93
-    residuos = np.array([0.1, -0.1])
-    return FitResult(ODR_output=ODR_output, parametros=parametros, R2=R2, R2_aj=R2_aj, residuos=residuos)
+def resultado_explicito():
+    def linea(x, params):
+        return params[0] * x + params[1]
+
+    modelo = Funciones(linea)
+    x = np.linspace(0.0, 10.0, 25)
+    y = 3.0 * x - 1.0
+    return modelo.fit_odr(x, y, beta0=[0.0, 0.0], estimadores=True)
+
 
 @pytest.fixture
-def datos_lineales():
-    x = np.arange(0, 11, dtype=float)
-    y = 2 * x + 1
-    rng = np.random.default_rng(seed=1234)
-    y = y + rng.normal(0, 0.05, size=len(x))  # ruido con sigma=0.05
-    return x, y
+def resultado_implicito():
+    modelo = Funciones(Funciones.circunferencia)
+    t = np.linspace(0.0, 2.0 * np.pi, 60, endpoint=False)
+    x = 2.0 + 4.0 * np.cos(t)
+    y = -1.0 + 4.0 * np.sin(t)
+    return modelo.fit_odr(x, y, beta0=[1.0, 0.0, 3.5], estimadores=True)
 
-@pytest.fixture
-def func_lineal():
-    return Funciones(lambda p, x: p[0]*x + p[1])
 
-# --- Tests ---
+def test_fitresult_tipo(resultado_explicito):
+    assert isinstance(resultado_explicito, FitResult)
+    assert resultado_explicito.odrresult is not None
+    assert len(resultado_explicito.parametros) == 2
 
-def test_str(fit_result_mock):
-    s = str(fit_result_mock)
-    assert "p1 = 1" in s
-    assert "R² = 0.9500" in s
-    assert "R² ajustado = 0.9300" in s
-    assert "Convergencia" in s
 
-def test_iter(fit_result_mock):
-    params, R2, R2_aj, residuos, output = list(fit_result_mock)
-    assert params == fit_result_mock.parametros
-    assert R2 == fit_result_mock.R2
-    assert R2_aj == fit_result_mock.R2_aj
-    assert np.all(residuos == fit_result_mock.residuos)
-    assert output == fit_result_mock.ODR_output
+def test_str_contiene_campos_clave(resultado_explicito):
+    s = str(resultado_explicito)
+    assert "Parámetros" in s
+    assert "p1" in s
+    assert "Motivo(s) de finalización" in s
 
-def test_jackknife_excluir_incluir_error(fit_result_mock):
-    f_mock = FitResult
-    x = np.array([1, 2, 3])
-    y = np.array([1, 2, 3])
+
+def test_iter_explicito_orden(resultado_explicito):
+    values = list(resultado_explicito)
+    assert len(values) == 7
+
+    params, r2, r2_aj, residuos, chi2, mcor, odr = values
+    assert params == resultado_explicito.parametros
+    assert r2 == resultado_explicito.estimadores.get("R2")
+    assert r2_aj == resultado_explicito.estimadores.get("R2 ajustado")
+    assert np.array_equal(residuos, resultado_explicito.estimadores.get("Residuos"))
+    assert chi2 == resultado_explicito.estimadores.get("Chi2 reducido")
+    assert np.array_equal(mcor, resultado_explicito.estimadores.get("Matriz de correlación"))
+    assert odr == resultado_explicito.odrresult
+
+
+def test_iter_implicito_r2_y_residuos_son_none(resultado_implicito):
+    _, r2, r2_aj, residuos, chi2, mcor, _ = list(resultado_implicito)
+    assert r2 is None
+    assert r2_aj is None
+    assert residuos is None
+    assert chi2 is not None
+    assert mcor is not None
+
+
+def test_jackknife_error_excluir_e_incluir(resultado_explicito):
+    x = np.array([1.0, 2.0, 3.0, 4.0])
+    y = np.array([2.0, 4.0, 6.0, 8.0])
     with pytest.raises(ValueError):
-        fit_result_mock.jackknife(f_mock, x, y, excluir=[0], incluir=[1])
+        resultado_explicito.jackknife(
+            object(),
+            x,
+            y,
+            excluir=[0],
+            incluir=[1],
+        )
 
-def test_jackknife_objeto_invalido(fit_result_mock):
-    x = np.array([1, 2, 3])
-    y = np.array([1, 2, 3])
+
+def test_jackknife_error_objeto_invalido(resultado_explicito):
+    x = np.array([1.0, 2.0, 3.0])
+    y = np.array([2.0, 4.0, 6.0])
     with pytest.raises(TypeError):
-        fit_result_mock.jackknife(object(), x, y)
+        resultado_explicito.jackknife(object(), x, y)
 
-def test_jackknife_basico(func_lineal, datos_lineales):
-    x, y = datos_lineales
-    p0 = [0, 0]
-    resultado = func_lineal.fit_odr(x, y, p0)
-    jk_params, fits_jk = resultado.jackknife(func_lineal, x, y, p0=p0)
-    assert len(jk_params) == len(p0)
-    assert all(isinstance(p, UFloat) for p in jk_params)
 
-# pytest Tests\\Test_FitResult.py
+def test_jackknife_basico_funciona(resultado_explicito):
+    def linea(x, params):
+        return params[0] * x + params[1]
+
+    modelo = Funciones(linea)
+    x = np.linspace(0.0, 5.0, 10)
+    y = 2.0 * x + 1.0 + np.linspace(-0.01, 0.01, x.size)
+
+    params_jk, fits_jk = resultado_explicito.jackknife(modelo, x, y, p0=[0.0, 0.0])
+    assert len(params_jk) == 2
+    assert len(fits_jk) == len(x)
+
+
+def test_jackknife_con_errores_funciona(resultado_explicito):
+    def linea(x, params):
+        return params[0] * x + params[1]
+
+    modelo = Funciones(linea)
+    x = np.linspace(0.0, 5.0, 12)
+    y = 1.5 * x + 0.2 + np.linspace(-0.02, 0.02, x.size)
+    err_x = np.full_like(x, 0.05)
+    err_y = np.full_like(x, 0.08)
+
+    params_jk, fits_jk = resultado_explicito.jackknife(
+        modelo,
+        x,
+        y,
+        p0=[0.0, 0.0],
+        err_x=err_x,
+        err_y=err_y,
+    )
+    assert len(params_jk) == 2
+    assert len(fits_jk) == len(x)

@@ -1,106 +1,89 @@
-import pytest
 import numpy as np
-from uncertainties.core import UFloat
-from uncertainties import ufloat
+import pytest
+
 from fittools.fit_result import FitResult
 from fittools.funciones import Funciones
 
-# --- Fixtures de datos ---
 
 @pytest.fixture
 def datos_lineales():
-    x = np.arange(0, 11, dtype=float)
-    y = 2 * x + 1
-    rng = np.random.default_rng(seed=1234)
-    y = y + rng.normal(0, 0.05, size=len(x))  # ruido con sigma=0.05
+    x = np.linspace(0.0, 8.0, 40)
+    rng = np.random.default_rng(seed=2026)
+    y = 1.75 * x - 0.3 + rng.normal(0.0, 0.03, size=x.size)
     return x, y
 
-@pytest.fixture
-def func_lineal():
-    def linea(params, x):
-        a, b = params
-        return a*x + b
-    return Funciones(linea)
 
 @pytest.fixture
-def func_polinomial():
-    return Funciones(Funciones.polinomio)
+def modelo_lineal():
+    def linea(x, params):
+        m, b = params
+        return m * x + b
 
-# --- Tests Funciones.fit_odr básico ---
+    return Funciones(linea, tipo="explicita")
 
-def test_fit_odr_basico(func_lineal, datos_lineales):
+
+@pytest.fixture
+def datos_circunferencia():
+    t = np.linspace(0.0, 2.0 * np.pi, 120, endpoint=False)
+    x = -1.0 + 2.5 * np.cos(t)
+    y = 0.5 + 2.5 * np.sin(t)
+    return x, y
+
+
+def test_fit_odr_explicito_parametros_cercanos(modelo_lineal, datos_lineales):
     x, y = datos_lineales
-    p0 = [0, 0]
-    resultado = func_lineal.fit_odr(x, y, p0)
+    resultado = modelo_lineal.fit_odr(x, y, beta0=[0.0, 0.0], estimadores=True)
 
-    # Validaciones generales
     assert isinstance(resultado, FitResult)
-    assert len(resultado.parametros) == 2
-    assert all(isinstance(p, UFloat) for p in resultado.parametros)
-    assert 0.99 < resultado.R2 <= 1.0
-    assert 0.99 < resultado.R2_aj <= 1.0
+    m_fit, b_fit = [p.nominal_value for p in resultado.parametros]
+    assert m_fit == pytest.approx(1.75, rel=1e-2)
+    assert b_fit == pytest.approx(-0.3, abs=0.07)
 
-def test_fit_odr_con_errores(func_lineal, datos_lineales):
+
+def test_fit_odr_implicito_parametros_cercanos(datos_circunferencia):
+    x, y = datos_circunferencia
+    modelo = Funciones(Funciones.circunferencia)  # tipo inferido a implicita
+    resultado = modelo.fit_odr(x, y, beta0=[-0.5, 0.0, 2.0], estimadores=True)
+
+    h_fit, k_fit, r_fit = [p.nominal_value for p in resultado.parametros]
+    assert h_fit == pytest.approx(-1.0, abs=0.02)
+    assert k_fit == pytest.approx(0.5, abs=0.02)
+    assert abs(r_fit) == pytest.approx(2.5, abs=0.02)
+
+
+def test_fit_odr_seleccion_estimadores_explicito(modelo_lineal, datos_lineales):
     x, y = datos_lineales
-    p0 = [0, 0]
-    err_x = np.full_like(x, 0.1)
-    err_y = np.full_like(y, 0.2)
-    resultado = func_lineal.fit_odr(x, y, p0, err_x=err_x, err_y=err_y)
-    
-    assert isinstance(resultado, FitResult)
-    assert len(resultado.residuos) == len(x)
+    resultado = modelo_lineal.fit_odr(
+        x,
+        y,
+        beta0=[0.0, 0.0],
+        estimadores=["R2", "Chi2 reducido"],
+    )
 
-# --- Tests FitResult.__str__ y __iter__ ---
+    assert sorted(resultado.estimadores.keys()) == ["Chi2 reducido", "R2"]
 
-def test_str_iter(func_lineal, datos_lineales):
+
+def test_fit_odr_seleccion_estimadores_implicito(datos_circunferencia):
+    x, y = datos_circunferencia
+    modelo = Funciones(Funciones.circunferencia)
+    resultado = modelo.fit_odr(
+        x,
+        y,
+        beta0=[-0.5, 0.0, 2.0],
+        estimadores=["delta", "modulo_delta"],
+    )
+
+    assert sorted(resultado.estimadores.keys()) == ["delta", "modulo_delta"]
+    assert np.asarray(resultado.estimadores["delta"]).shape == (2, x.size)
+
+
+def test_fit_odr_error_shape_en_incertidumbre(modelo_lineal, datos_lineales):
     x, y = datos_lineales
-    p0 = [0, 0]
-    resultado = func_lineal.fit_odr(x, y, p0)
-    
-    s = str(resultado)
-    assert "p1" in s and "p2" in s
-    params, R2, R2_aj, residuos, output = list(resultado)
-    assert params == resultado.parametros
-    assert R2 == resultado.R2
-    assert R2_aj == resultado.R2_aj
-    assert np.all(residuos == resultado.residuos)
-    assert output == resultado.ODR_output
+    with pytest.warns(UserWarning):
+        with pytest.raises(ValueError):
+            modelo_lineal.fit_odr(x, y, beta0=[0.0, 0.0], errx=np.ones(3))
 
-# --- Tests Jackknife ---
 
-def test_jackknife_basico(func_lineal, datos_lineales):
-    x, y = datos_lineales
-    p0 = [0, 0]
-    resultado = func_lineal.fit_odr(x, y, p0)
-    jk_params, fits_jk = resultado.jackknife(func_lineal, x, y, p0=p0)
-    
-    assert len(jk_params) == len(p0)
-    assert all(isinstance(p, UFloat) for p in jk_params)
-    assert len(fits_jk) == len(x)
-
-def test_jackknife_excluir_incluir_error(func_lineal, datos_lineales):
-    x, y = datos_lineales
-    p0 = [0, 0]
-    resultado = func_lineal.fit_odr(x, y, p0)
+def test_tipo_invalido_en_constructor():
     with pytest.raises(ValueError):
-        resultado.jackknife(func_lineal, x, y, excluir=[0], incluir=[1])
-
-def test_jackknife_objeto_invalido(datos_lineales):
-    x, y = datos_lineales
-    parametros = [ufloat(1.0, 0.1), ufloat(2.0, 0.2)]
-    from types import SimpleNamespace
-    ODR_output = SimpleNamespace(stopreason="Convergencia")
-    resultado = FitResult(ODR_output=ODR_output, parametros=parametros)
-    
-    with pytest.raises(TypeError):
-        resultado.jackknife(object(), x, y)
-
-# --- Tests Funciones polinomio ---
-
-def test_polinomio():
-    x = np.array([0, 1, 2])
-    params = [1, 2, 3]  # y = 1 + 2*x + 3*x^2
-    y_calc = Funciones.polinomio(params, x)
-    np.testing.assert_allclose(y_calc, [1, 6, 17])
-
-# pytest Tests\\Test_Fit.py
+        Funciones(Funciones.polinomio, tipo="otro")
