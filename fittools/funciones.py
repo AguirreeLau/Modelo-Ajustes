@@ -372,9 +372,8 @@ class Funciones:                                                    # Clase de l
         Returns:
             float: `chi2 / grados_de_libertad` o `np.inf` si dof <= 0.
         """
-        chi2 = sol.sum_square
         dof = len(sol.eps) - len(sol.beta)
-        return chi2 / dof if dof > 0 else np.inf
+        return sol.res_var if dof > 0 else np.inf
 
     @excepciones(critico=True, imprimir=True)
     def _calc_matriz_correlacion(self, sol, xdata=None, ydata=None):
