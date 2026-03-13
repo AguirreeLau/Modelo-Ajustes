@@ -16,7 +16,7 @@ colores personalizados, tamaños de fuente y guardado automático de figuras en 
 from typing import Optional, Union, Sequence
 import matplotlib.pyplot as plt
 from matplotlib import style
-import scienceplots
+import scienceplots, lovelyplots, stonerplots, cmasher
 from pathlib import Path
 import numpy as np
 from .data_frames import DataFrame as DF        # para usar _norm_str
