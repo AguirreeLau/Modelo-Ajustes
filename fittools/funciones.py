@@ -246,11 +246,16 @@ class Funciones:                                                    # Clase de l
         a = np.asarray(a)
         b = np.asarray(b)
 
-        if a.shape[0] != b.shape[0]:
+        # Número de datos en cada array
+        Na = a.shape[-1]
+        Nb = b.shape[-1]
+
+        if Na != Nb:
             raise ValueError(
-                f"Los arrays deben tener la misma cantidad de datos. "
-                f"Se obtuvo {a.shape[0]} y {b.shape[0]}."
+                f"Los arrays deben tener la misma cantidad de datos (última dimensión). "
+                f"Se obtuvo {Na} y {Nb}."
             )
+
     @excepciones(critico=True, imprimir=True)
     def _peso(self, err: np.ndarray, err_min: Optional[float] = None) -> np.ndarray:
         """
