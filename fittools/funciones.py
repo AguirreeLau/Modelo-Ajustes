@@ -243,9 +243,14 @@ class Funciones:                                                    # Clase de l
         Raises:
             ValueError: Si los arreglos no tienen la misma longitud.
         """
-        if len(a) != len(b):
-            raise ValueError(f"Los arrays deben tener la misma longitud. Se obtuvo {len(a)} y {len(b)} respectivamente.")
+        a = np.asarray(a)
+        b = np.asarray(b)
 
+        if a.shape[0] != b.shape[0]:
+            raise ValueError(
+                f"Los arrays deben tener la misma cantidad de datos. "
+                f"Se obtuvo {a.shape[0]} y {b.shape[0]}."
+            )
     @excepciones(critico=True, imprimir=True)
     def _peso(self, err: np.ndarray, err_min: Optional[float] = None) -> np.ndarray:
         """
