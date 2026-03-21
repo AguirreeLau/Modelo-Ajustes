@@ -4,7 +4,7 @@ from odrpack import odr_fit
 from ._decoradores import excepciones
 from .fit_result import FitResult
 from dataclasses import dataclass
-from uncertainties import ufloat
+from uncertainties import ufloat, correlated_values
 import numpy as np
 
 def modelo_implicito(func):
@@ -155,7 +155,9 @@ class Funciones:                                                    # Clase de l
         """
 
         sol = odr_fit(self.funcion, xdata, ydata, beta0, weight_x=wx, weight_y=wy, task='explicit-ODR', **kwargs)
-        beta_opt = [ufloat(val, err) for val, err in zip(sol.beta, sol.sd_beta)]
+        
+        cov = sol.cov_beta * sol.res_var
+        beta_opt = correlated_values(sol.beta, cov)
 
         disponibles_explicito = {
             "R2": self._calc_r2,
@@ -216,7 +218,9 @@ class Funciones:                                                    # Clase de l
         array_nulo = np.zeros_like(xdata)
 
         sol = odr_fit(self.funcion, X, array_nulo, beta0, weight_x=wX, weight_y=None, task='implicit-ODR', **kwargs)
-        beta_opt = [ufloat(val, err) for val, err in zip(sol.beta, sol.sd_beta)]
+        
+        cov = sol.cov_beta * sol.res_var
+        beta_opt = correlated_values(sol.beta, cov)
 
         disponibles_implicito = {
             "Chi2 reducido": self._calc_chi2_reducido,
